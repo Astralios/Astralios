@@ -1,6 +1,0 @@
-- [x] HAL
-- [x] Slab Allocator
-- [ ] VMM
-- [ ] VFS
-- [ ] Drivers
-- [ ] Userspace
