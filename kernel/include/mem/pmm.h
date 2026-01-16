@@ -16,12 +16,14 @@ typedef enum pmm_debug_mode_t
     DEBUG_PMM_FREE_MEM_SIZE,
     DEBUG_PMM_REGIONS_FULL_SIZE,
     DEBUG_PMM_REGION_BITMAP,
+    DEBUG_PMM_ERROR,
+    DEBUG_PMM_COUNT,
 } pmm_debug_mode_t;
 
-// TODO: Perhaps add a first free index
 typedef struct pmm_region_t
 {
     size_t   pages_available;
+    size_t   first_free_idx;
     struct   pmm_region_t *next;
     bitmap_t bitmap;
 } pmm_region_t;

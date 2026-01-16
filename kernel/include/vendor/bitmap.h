@@ -43,6 +43,18 @@ static size_t bitmap_find_contiguous_range(bitmap_t *bitmap, size_t contiguous_b
     return (size_t)(-1);
 }
 
+static size_t bitmap_find_contiguous_range_from(bitmap_t *bitmap, size_t from, size_t contiguous_bits_needed)
+{
+    size_t len = 0;
+    for (size_t i = from; i < bitmap->size; i++)
+    {
+        if (bitmap_bit(bitmap, i) & 0b1) len = 0;
+        else len++;
+        if (len == contiguous_bits_needed) return (i + 1 - contiguous_bits_needed);
+    }
+    return (size_t)(-1);
+}
+
 static void bitmap_set_range(bitmap_t *bitmap, size_t idx, size_t size)
 {
     if (size + idx >= bitmap->size) return;

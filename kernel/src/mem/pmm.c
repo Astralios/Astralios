@@ -2,7 +2,6 @@
 #include "bootstub.h"
 #include "devices/serial.h"
 #include "misc/debug.h"
-#include "misc/helpers.h"
 #include "string.h"
 #include "vendor/bitmap.h"
 
@@ -84,6 +83,7 @@ void pmm_init(void)
                 pmm_free_mem_amount += free_pages;
             
                 pmm_region_t *region = (void*)to_vaddr(base);
+                region->first_free_idx = 0;
                 region->bitmap.size = free_pages;
                 region->pages_available = free_pages;
                 region->next = region_list;
@@ -99,36 +99,34 @@ void pmm_init(void)
 
 phys_addr_t pmm_alloc(size_t pages_count)
 {
-    srdebug(pmm_alloc, "Allocating %zu pages", pages_count);
     if (pages_count == 0) return 0;
 
     pmm_region_t *curr = region_list;
     while (curr)
     {
-        if (curr->pages_available >= pages_count) break;
+        if (curr->pages_available >= pages_count)
+        {
+            size_t idx = bitmap_find_contiguous_range_from(&curr->bitmap, curr->first_free_idx, pages_count);
+            if (idx != (size_t)(-1))
+            {
+                if (idx == curr->first_free_idx) curr->first_free_idx += pages_count;
+                bitmap_set_range(&curr->bitmap, idx, pages_count); 
+                
+                curr->pages_available -= pages_count;
+                pmm_free_mem_amount -= pages_count;
+
+                virt_addr_t vaddr = cast_vaddr(curr->bitmap.map) + (curr->bitmap.size + 7) / 8 + idx * PAGE_SIZE;
+                phys_addr_t addr = to_paddr(vaddr);
+                return addr;
+            }
+        }
         curr = curr->next;
     }
-    if (!curr) {
-        srdebug(pmm_alloc, "Couldn't find a sufficiently sized region");
-        return 0;
-    }
-    srdebug(pmm_alloc, "Found a sufficient sized region at %x", curr);
-    
-    size_t idx = bitmap_find_contiguous_range(&curr->bitmap, pages_count);
-    if (idx == (size_t)(-1)) return 0;
-    srdebug(pmm_alloc, "Found a sufficient contiguous range at index %zu", idx);
-    
-    bitmap_set_range(&curr->bitmap, idx, pages_count); 
-    pmm_free_mem_amount -= pages_count;
-    virt_addr_t vaddr = cast_vaddr(curr->bitmap.map) + (curr->bitmap.size + 7) / 8 + idx * PAGE_SIZE;
-    phys_addr_t addr = to_paddr(vaddr);
-    pmm_debug(DEBUG_PMM_REGION_BITMAP, curr);
-    return addr;
+    return 0;
 }
 
 void pmm_free(phys_addr_t addr, size_t pages_count)
 {
-    srdebug(pmm_free, "Freeing %zu pages at %x", pages_count, addr);
     pmm_region_t *curr = region_list;
     
     while (curr)
@@ -139,8 +137,9 @@ void pmm_free(phys_addr_t addr, size_t pages_count)
         curr = curr->next;
     }
     if (!curr) return;
+    
     size_t idx = (addr - (to_paddr(curr->bitmap.map)) - (curr->bitmap.size + 7) / 8) / PAGE_SIZE;
-    srdebug(pmm_free, "Freeing from bitmap index: %zu", idx);
+    if (idx < curr->first_free_idx) curr->first_free_idx = idx;
     bitmap_unset_range(&curr->bitmap, idx, pages_count);
 }
 
