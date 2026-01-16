@@ -1,0 +1,37 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu11",
+      "-ffreestanding",
+      "-fno-stack-protector",
+      "-fno-stack-check",
+      "-fno-PIC",
+      "-m64",
+      "-march=x86-64",
+      "-mno-80387",
+      "-mno-mmx",
+      "-mno-sse",
+      "-mno-sse2",
+      "-mno-red-zone",
+      "-mcmodel=kernel",
+      "-g",
+      "-Ikernel/include",
+      "-Ibootstub",
+      "-Ilibc",
+      "-D",
+      "__ARCH_X86_64__",
+      "-D",
+      "__DEBUG__",
+      "-c",
+      "-o",
+      ".build/objs/kernel/src/kernel.c.o",
+      "kernel/src/kernel.c"
+    ],
+    "directory": "/home/stierprogrammer/Desktop/programming/projects/AstralisOS (Rewrite)",
+    "file": "/home/stierprogrammer/Desktop/programming/projects/AstralisOS (Rewrite)/kernel/src/kernel.c",
+    "output": "/home/stierprogrammer/Desktop/programming/projects/AstralisOS (Rewrite)/.build/objs/kernel/src/kernel.c.o"
+  }
+]
