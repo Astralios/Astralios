@@ -24,7 +24,7 @@ typedef enum vmm_region_state_t {
 
 typedef struct vmm_region_t {
     char *name;
-    virt_addr_t addr;
+    vaddr_t addr;
     vmm_region_state_t state;
     int flags;
     size_t len;
@@ -32,8 +32,8 @@ typedef struct vmm_region_t {
 } vmm_region_t;
 
 typedef struct vmm_t {
-    page_table_t page_table;
-    vmm_region_t region;
+    page_table_t* page_table;
+    vmm_region_t* region;
 } vmm_t;
 
 typedef enum vmm_alloc_error {
@@ -41,5 +41,5 @@ typedef enum vmm_alloc_error {
     ERROR_VMM_COUNT,
 } vmm_alloc_error;
 
-virt_addr_t vmm_alloc(char *name, size_t len, int flags);
+vaddr_t vmm_alloc(vmm_t *vmm, char *name, size_t len, int flags);
 

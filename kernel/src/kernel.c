@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifdef __ARCH_X86_64__
 #include "arch/x86_64/def.h"
 #include "arch/x86_64/gdt/gdt.h"
@@ -9,12 +10,11 @@
 
 #include "bootstub.h"
 #include "devices/serial.h"
-
+#include "misc/debug.h"
 #include "string.h"
 #include "mem/pmm.h"
 
 kernel_params_t *kernel_params = NULL;
-page_table_t *pml4 = NULL;
 
 void kmain(kernel_params_t *params)
 {
@@ -24,11 +24,22 @@ void kmain(kernel_params_t *params)
     idt_init();
     tss_init();
     pmm_init();    
-    paging_init();
 
-    void *a = (void*)to_vaddr(pmm_alloc(2));
-    pmm_debug(DEBUG_PMM_ERROR);
-    pmm_free(to_paddr(cast_vaddr(a)), 3); 
+    uint64_t root_pt_paddr = pmm_alloc(1);
+    
+    srdebug(kmain, "Root page table addr: %x", root_pt_paddr);
+
+    page_table_t *root_pt = paddr_ptr(root_pt_paddr); 
+    memset(root_pt->entries, 0, PAGE_SIZE);
+    map_kernel_to_pt(root_pt);
+    map_memmap_to_pt(root_pt); 
+    write_cr3(root_pt_paddr);
+
+    debug("Test");
+    
+    int *a = paddr_ptr(pmm_alloc(1));
+    *a = 5;
+    *a = 6;
 
     hcf();
 }

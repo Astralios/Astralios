@@ -22,6 +22,7 @@ typedef enum pmm_debug_mode_t
 
 typedef struct pmm_region_t
 {
+    paddr_t  free_paddr;
     size_t   pages_available;
     size_t   first_free_idx;
     struct   pmm_region_t *next;
@@ -30,6 +31,6 @@ typedef struct pmm_region_t
 
 void        pmm_debug(pmm_debug_mode_t mode, ...);
 void        pmm_init(void);
-phys_addr_t pmm_alloc(size_t pages_count);
-void        pmm_free(phys_addr_t addr, size_t pages_count);
+paddr_t     pmm_alloc(size_t pages_count);
+void        pmm_free(paddr_t addr, size_t pages_count);
 

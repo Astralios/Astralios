@@ -9,7 +9,6 @@ typedef struct bitmap_t
     uint8_t map[];
 } bitmap_t;
 
-
 static inline void bitmap_set(bitmap_t *bitmap, size_t idx)
 {
     size_t byte_idx = idx / 8;

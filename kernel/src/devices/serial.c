@@ -91,7 +91,7 @@ void srprintf(const char *fmt, ...)
                 int value = va_arg(args, int);
                 srput((char)value);
                 break;
-            }
+            } 
             case 'd':
             {
                 int value = va_arg(args, int);
