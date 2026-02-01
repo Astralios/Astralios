@@ -28,18 +28,13 @@ void kmain(kernel_params_t *params)
     uint64_t root_pt_paddr = pmm_alloc(1);
     
     srdebug(kmain, "Root page table addr: %x", root_pt_paddr);
-
+    
     page_table_t *root_pt = paddr_ptr(root_pt_paddr); 
     memset(root_pt->entries, 0, PAGE_SIZE);
     map_kernel_to_pt(root_pt);
     map_memmap_to_pt(root_pt); 
     write_cr3(root_pt_paddr);
 
-    debug("Test");
-    
-    int *a = paddr_ptr(pmm_alloc(1));
-    *a = 5;
-    *a = 6;
 
     hcf();
 }

@@ -21,7 +21,7 @@ static void set_page_entry(page_entry_t *entry)
         *entry = 0;
         *entry |= (PAGE_P | PAGE_RW | PAGE_US);
         *entry |= pmm_alloc(1) & PAGE_PHYSICAL_ADDRESS_MASK;
-memset((void*)to_vaddr((*entry & PAGE_PHYSICAL_ADDRESS_MASK)), 0, PAGE_SIZE);
+        memset((void*)to_vaddr((*entry & PAGE_PHYSICAL_ADDRESS_MASK)), 0, PAGE_SIZE);
     }
 }
 
@@ -100,8 +100,10 @@ void unmap_range_from_pt(page_table_t *pt, vaddr_t from, vaddr_t to)
 
 static void map_kernel_sections_to_pt(page_table_t *pt, vaddr_t sec_start, vaddr_t sec_end, page_flags_t flags)
 {
-    extern char kernel_start[];
-    size_t offset = sec_start - (vaddr_t)kernel_start;
+    // sec_start = ALIGN_DOWN(sec_start, PAGE_SIZE);
+    // sec_end   = ALIGN_UP(sec_end, PAGE_SIZE);
+
+    size_t offset = sec_start - (vaddr_t)kernel_params->kernel_addr.virtual_base;
     paddr_t kernel_paddr = kernel_params->kernel_addr.physical_base;
     map_vrange_to_pt(pt, sec_start, sec_end, kernel_paddr + offset, flags);
 }
