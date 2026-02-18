@@ -145,6 +145,12 @@ paddr_t pmm_alloc(size_t pages_count)
     return 0;
 }
 
+paddr_t pmm_alloc_with_bytes(size_t bytes)
+{
+    size_t pages_count = ALIGN_UP(bytes, PAGE_SIZE) / PAGE_SIZE;
+    return pmm_alloc(pages_count);
+}
+
 void pmm_free(paddr_t addr, size_t pages_count)
 {
     pmm_region_t *curr = region_list;
@@ -163,3 +169,7 @@ void pmm_free(paddr_t addr, size_t pages_count)
     bitmap_unset_range(&curr->bitmap, idx, pages_count);
 }
 
+void pmm_free_with_bytes(paddr_t addr, size_t bytes) {
+    size_t pages_count = ALIGN_UP(bytes, PAGE_SIZE) / PAGE_SIZE;
+    pmm_free(addr, pages_count);
+}

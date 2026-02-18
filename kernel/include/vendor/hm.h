@@ -1,31 +1,17 @@
 #pragma once
 
 #include <stddef.h>
+#include "mem/pmm.h"
 
-/*
-    struct bucket
-    {
-        size_t hash;
-        type key;
-        type val;
-        bucket* next;
-    }
-
-    struct hm
-    {
-        bucket** buckets;
-        size_t cap, len;
-    }
-*/
-
-#include <stdio.h>
-#include <stdlib.h>
 #define MALLOC(size) malloc(size)
 #define CALLOC(nmemb, size) calloc(nmemb, size)
 #define FREE(ptr) free(ptr)
 #define PRINTF(fmt, ...) printf(fmt, __VA_ARGS__)
 
 #define DEFAULT_HM_CAPAPCITY 16
+
+#define bucket(ktype, vtype, name) typedef struct name { size_t hash; ktype key; vtype val; struct name *next; } name
+#define hm(_Bucket_T, _Name) typedef struct _Name { _Bucket_T **buckets; size_t cap, len; } _Name 
 
 #define hm_init(_HM, _Bucket_T)                                                           \
     do                                                                                    \

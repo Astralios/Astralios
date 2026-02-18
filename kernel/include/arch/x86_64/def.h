@@ -4,6 +4,7 @@
 #include "bootstub.h"
 
 #define PAGE_SIZE 4096
+#define TO_PAGES(bytes) (bytes / PAGE_SIZE)
 
 extern kernel_params_t *kernel_params;
 

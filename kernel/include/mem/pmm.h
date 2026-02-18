@@ -33,4 +33,15 @@ void        pmm_debug(pmm_debug_mode_t mode, ...);
 void        pmm_init(void);
 paddr_t     pmm_alloc(size_t pages_count);
 void        pmm_free(paddr_t addr, size_t pages_count);
+paddr_t     pmm_alloc_with_bytes(size_t bytes);
+void        pmm_free_with_bytes(paddr_t addr, size_t bytes);
 
+static inline vaddr_t pmm_valloc(size_t pages_count)
+{
+    return to_vaddr(pmm_alloc(pages_count));
+}
+
+static inline vaddr_t pmm_valloc_with_bytes(size_t pages_count)
+{
+    return to_vaddr(pmm_alloc_with_bytes(pages_count));
+}
