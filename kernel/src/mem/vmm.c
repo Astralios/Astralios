@@ -124,28 +124,31 @@ void vmm_free(vmm_t *vmm, vaddr_t vaddr)
     }
     if (curr == NULL) return;
     curr->state = FREE;
-    
-    if (curr->prev && curr->prev->state == FREE)
-    {
-        curr->prev->pages += curr->pages;
-        curr->prev->next = curr->next;
-        if (curr->next) curr->next->prev = curr->prev;
-        pmm_free_with_bytes(to_paddr(((paddr_t)curr)), sizeof(vmm_region_t));
-    }
-
-    if (curr->next && curr->next->state == FREE)
-    {
-        curr->pages += curr->next->pages;
-        curr->next = curr->next->next;
-        if (curr->next->next) curr->next->next->prev = curr;
-        pmm_free_with_bytes((paddr_t)curr->next, sizeof(vmm_region_t));
-    }
-
-    pmm_free(to_paddr(curr->addr), curr->pages);
 
     for (size_t i = 0; i < curr->pages; i++)
     {
         unmap_from_pt(vmm->pt, curr->addr + i * PAGE_SIZE);
         invplg(curr->addr);
+    }
+
+    if (curr->prev && curr->prev->state == FREE)
+    {
+        vmm_region_t *old = curr->prev;
+        curr->addr = old->addr;
+        curr->pages += old->pages;
+        curr->prev = old->prev;
+        if (curr->prev)
+            curr->prev->next = curr;
+        pmm_free_with_bytes((paddr_t)old, sizeof(vmm_region_t));
+    }
+
+    if (curr->next && curr->next->state == FREE)
+    {
+        vmm_region_t *old = curr->next;
+        curr->pages += old->pages;
+        curr->next = old->next;
+        if (curr->next)
+            curr->next->prev = curr;
+        pmm_free_with_bytes((paddr_t)old, sizeof(vmm_region_t));
     }
 }

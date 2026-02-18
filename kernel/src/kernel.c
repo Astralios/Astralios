@@ -96,9 +96,7 @@ void kmain(kernel_params_t *params)
     srdebug(kmain, "%x: ", x);
     *((char*)x) = 5;
     vmm_debug(DEBUG_VMM_REGION_PRINT, vmm_heap.regions);
-
     vmm_free(&vmm_heap, (vaddr_t)x);
     vmm_debug(DEBUG_VMM_REGION_PRINT, vmm_heap.regions);
-    *x = 6;
     hcf();
 }
