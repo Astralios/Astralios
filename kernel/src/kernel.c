@@ -1,23 +1,129 @@
-#include "misc/helpers.h"
-#include <stdint.h>
-#include <time.h>
-#ifdef __ARCH_X86_64__
-#include "arch/x86_64/def.h"
-#include "arch/x86_64/gdt/gdt.h"
-#include "arch/x86_64/idt/idt.h"
-#include "arch/x86_64/tss.h"
-#include "arch/x86_64/cpu.h"
-#include "arch/x86_64/mem/paging.h"
-#endif
+#define SMLIB_IMPLEMENTATION
+#include "smlib.h"
+
+#include "arch/x86_64/gdt.h"
+#include "arch/x86_64/interrupts/controller/pic.h"
+#include "arch/x86_64/interrupts/idt.h"
+#include "arch/x86_64/mm/paging.h"
+#include "arch/x86_64/pit.h"
+#include "devices/tty.h"
+#include "devices/serial.h"
+
+#include "drivers/fb.h"
+
+#include "drivers/ps2/ps2.h"
+#include "drivers/ps2/ps2_keyboard.h"
+#include "fs/tar.h"
+
+#include "fs/tmpfs.h"
+#include "misc/debug.h"
+#include "fs/vfs.h"
 
 #include "bootstub.h"
-#include "devices/serial.h"
-#include "misc/debug.h"
-#include "string.h"
-#include "mem/pmm.h"
-#include "mem/vmm.h"
+#include "mm/kheap.h"
+#include "mm/pmm.h"
 
+#ifdef __ARCH_X86_64__
+#include "arch/x86_64/def.h"
+#include "arch/x86_64/tss.h"
+#include "arch/x86_64/cpu.h"
+#endif
+
+#include "tasks/sched.h"
+#include "string.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdatomic.h>
+
+extern vaddr_t hhdm_end;
 kernel_params_t *kernel_params = NULL;
+tty_t tty;
+fb_driver_t *fb_driver0 = NULL;
+page_table_t *root_pt = NULL;
+
+void kpaging_init(page_table_t **root_pt)
+{
+    uint64_t root_pt_paddr = pmm_alloc(1);
+    *root_pt = paddr_ptr(root_pt_paddr);
+    memset((*root_pt)->entries, 0, PAGE_SIZE);
+    map_kernel_to_pt(*root_pt);
+    map_memmap_to_pt(*root_pt);
+    write_cr3(root_pt_paddr);
+}
+
+extern void enable_sse(void);
+
+float sqrt_sse(float x)
+{
+    float result;
+    __asm__(
+        "sqrtss %1, %0"
+        : "=x"(result)
+        : "x"(x));
+    return result;
+}
+
+void task_A(void)
+{
+    while (1)
+    {
+        cli();
+        srdebug(task_A, "Task A is running!");
+        sti();
+        yield();
+    }
+}
+
+void task_B(void)
+{
+    while (1)
+    {
+        cli();
+        srdebug(task_B, "Task B is running!");
+        sti();
+        yield();
+    }
+}
+
+// Taken from: https://github.com/purpleK2/kernel/blob/e6ff7cdeb50169a6715c6e6c0919a46f6f7b4245/src/arch/x86_64/math/fpu.c#L7
+void init_fpu()
+{
+    // TODO: Check if FPU is available
+    asm volatile(
+        "mov %%cr0, %%rax\n"
+        "and $~(1 << 2), %%rax\n" // clear EM: disable emulation
+        "or  $(1 << 1), %%rax\n"  // set MP: monitor FPU
+        "or  $(1 << 5), %%rax\n"  // set NE: enable internal x87 error reporting
+        "mov %%rax, %%cr0\n" ::
+            : "rax");
+
+    asm volatile("fninit");
+}
+
+static inline float fcosf(float x)
+{
+    float result;
+    __asm__ __volatile__(
+        "flds %1\n\t" // fpu stack shit
+        "fcos\n\t"
+        "fstps %0\n\t" // pop the float
+        : "=m"(result)
+        : "m"(x));
+    return result;
+}
+
+static inline float fsinf(float x)
+{
+    float result;
+    __asm__ __volatile__(
+        "flds %1\n\t" // fpu stack shit
+        "fsin\n\t"
+        "fstps %0\n\t" // pop the float
+        : "=m"(result)
+        : "m"(x));
+    return result;
+}
 
 void kmain(kernel_params_t *params)
 {
@@ -26,77 +132,55 @@ void kmain(kernel_params_t *params)
     gdt_init();
     idt_init();
     tss_init();
-    pmm_init();    
+    pmm_init();
 
-    uint64_t root_pt_paddr = pmm_alloc(1);
-    
-    srdebug(kmain, "Root page table addr: %x", root_pt_paddr);
-    
-    page_table_t *root_pt = paddr_ptr(root_pt_paddr); 
-    memset(root_pt->entries, 0, PAGE_SIZE);
-    map_kernel_to_pt(root_pt);
-    map_memmap_to_pt(root_pt); 
-    write_cr3(root_pt_paddr);
+    kpaging_init(&root_pt);
+    kheap_init(root_pt, hhdm_end, (32 * 1024 * 1024 * 1024l) / PAGE_SIZE);
 
-    srdebug(kmain, "Set up the new page table");
+    fb_driver0 = fb_driver_init(&kernel_params->fbs[0]);
+    fb_driver_fill_entirely(fb_driver0, BLUE);
 
-    vmm_region_t *root_vmm_regions = NULL;
-    vaddr_t hhdm_end = 0;
-    for (size_t i = 0; i < kernel_params->memmap.entry_count; i++)
-    {
-        memmap_entry_t entry = kernel_params->memmap.entries[i];
-        if (entry.type == MEMMAP_USABLE || entry.type == MEMMAP_FRAMEBUFFER || entry.type == MEMMAP_EXECUTABLE_AND_MODULES || entry.type == MEMMAP_BOOTLOADER_RECLAIMABLE)
-        {
-            char *name;
-            switch (entry.type) {
-            case MEMMAP_USABLE:
-                name = "Usable";
-                break;
-            case MEMMAP_FRAMEBUFFER:
-                name = "Framebuffer";
-                break;
-            case MEMMAP_EXECUTABLE_AND_MODULES:
-                name = "Kernel";
-                break;
-            case MEMMAP_BOOTLOADER_RECLAIMABLE:
-                name = "Bootloader Reclaimable";
-                break;
-            }
-            
-            vaddr_t end = to_vaddr(entry.base + entry.length);
-            if (entry.type != MEMMAP_EXECUTABLE_AND_MODULES && end > hhdm_end) hhdm_end = end;
+    kheap_debug();
+    pic_init();
 
-            vmm_region_t *region = paddr_ptr(pmm_alloc(BYTES_TO_FULL_PAGES(sizeof(vmm_region_t))));
-            region->addr = to_vaddr(entry.base);
-            region->pages = ALIGN_UP(entry.length, PAGE_SIZE) / PAGE_SIZE;
-            region->name = name;
-            region->state = ALLOCATED;
-            if (root_vmm_regions) root_vmm_regions->prev = region;
-            region->next = root_vmm_regions;
-            root_vmm_regions = region;
-        }
-    }
+    ps2_init();
+    ps2_keyboard_init();
 
-    vmm_debug(DEBUG_VMM_REGION_PRINT, root_vmm_regions);
+    fs_mount(&tmpfs, &vfs_root);
 
-    srdebug(kmain, "kernel vaddr: %x; kernel paddr: %x", kernel_params->kernel_addr.virtual_base, kernel_params->kernel_addr.physical_base);
-    srdebug(kmain, "hhdm start: %x", kernel_params->hhdm);
-    srdebug(kmain, "hhdm_end: %x", hhdm_end);
-    vmm_region_t *heap_region = paddr_ptr(pmm_alloc(BYTES_TO_FULL_PAGES(sizeof(vmm_region_t))));
-    heap_region->name = "Heap";
-    heap_region->addr = hhdm_end;
-    heap_region->pages = (2 * 1024 * 1024 * 1024l) / PAGE_SIZE;
-    heap_region->state = FREE;
-    heap_region->prev = NULL;
-    heap_region->next = NULL;
+    path_t initrd = vfs_path_from_abs("/initrd");
+    inode_t *initrd_inode = NULL;
+    vfs_create(&initrd, INODE_DIR, &initrd_inode);
 
-    vmm_t vmm_heap = { .regions = heap_region, .pt = root_pt };
-    vmm_debug(DEBUG_VMM_REGION_PRINT, vmm_heap.regions);
-    int *x = (void*)vmm_alloc(&vmm_heap, "For my int", 4096 * 2, PAGE_RW | PAGE_P);
-    srdebug(kmain, "%x: ", x);
-    *((char*)x) = 5;
-    vmm_debug(DEBUG_VMM_REGION_PRINT, vmm_heap.regions);
-    vmm_free(&vmm_heap, (vaddr_t)x);
-    vmm_debug(DEBUG_VMM_REGION_PRINT, vmm_heap.regions);
+    tar_extract(kernel_params->modules.modules[1].addr);
+
+    if (!initrd_inode)
+        debug("no initrd");
+    path_t hellotxt = vfs_path_from_abs("/initrd/astralis-welcome.txt");
+    inode_t *hellotxt_inode = NULL;
+    vfs_lookup(&hellotxt, &hellotxt_inode);
+    if (!hellotxt_inode)
+        debug("non-existant");
+    char read_buf[256] = {0};
+    inode_read(hellotxt_inode, read_buf, 32, 0);
+
+    memset(read_buf, 0, 256);
+    path_t bye = vfs_path_from_abs("/initrd/astralis-bye.txt");
+    inode_t *bye_inode = NULL;
+    vfs_lookup(&bye, &bye_inode);
+    inode_read(bye_inode, read_buf, 16, 0);
+
+    enable_sse();
+    init_fpu();
+
+    float val = fsinf(PI);
+    srdebug(kmain, "val: %d", (int)(val * 1000));
+
+    scheduler_init();
+    task_schedule(kernel_task_create(task_A));
+    task_schedule(kernel_task_create(task_B));
+
+    // pit_init(100);
+
     hcf();
 }

@@ -1,26 +1,28 @@
-BOOTLOADER   ?= limine
-KERNEL_FOLDER := kernel
-SRC_FOLDER   := kernel/src
-BUILD_FOLDER := .build
-BIN_FOLDER   := bin
-BIN_NAME     := astralisos
-LIBC_FOLDER  := libc
+BOOTLOADER   	?= limine
+CURR_DIR		:= ./
+KERNEL_FOLDER 	:= kernel
+SRC_FOLDER   	:= kernel/src
+BUILD_FOLDER 	:= .build
+BIN_FOLDER   	:= bin
+BIN_NAME     	:= astralisos
+LIBC_FOLDER  	:= libc
 BOOTSTUB_FOLDER := bootstub
-ISO_ROOT     := $(BUILD_FOLDER)/iso_root
-OBJS_FOLDER  := $(BUILD_FOLDER)/objs
+ISO_ROOT     	:= $(BUILD_FOLDER)/iso_root
+OBJS_FOLDER  	:= $(BUILD_FOLDER)/objs
 
-CFLAGS    := -Wall -Wextra -std=gnu11 -ffreestanding -fno-stack-protector \
-             -fno-stack-check -fno-PIC -m64 -march=x86-64 -mno-80387 \
-             -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -mcmodel=kernel -g
-CPPFLAGS  := -I$(KERNEL_FOLDER)/include -I$(BOOTSTUB_FOLDER) -I$(LIBC_FOLDER) -D __ARCH_X86_64__ -D __DEBUG__ -MMD -MP
-NASMFLAGS := -Wall -f elf64
+CFLAGS    		:= -Wall -Wextra -std=gnu11 -ffreestanding -fno-stack-protector \
+             		-fno-stack-check -fno-PIC -m64 -march=x86-64 \
+             		-mno-mmx -mno-red-zone -mcmodel=kernel -g \
+					-mno-80387 -msse 
+CPPFLAGS  		:= -I$(BOOTSTUB_FOLDER) -I$(KERNEL_FOLDER)/include -I$(LIBC_FOLDER) -Iexternal/libs -D __ARCH_X86_64__ -D __DEBUG__ -MMD -MP
+NASMFLAGS 		:= -Wall -f elf64
 
-C_SOURCES    := $(shell find $(SRC_FOLDER) $(LIBC_FOLDER) -name '*.c')
-ASM_SOURCES  := $(shell find $(SRC_FOLDER) -name '*.asm')
+C_SOURCES    	:= $(shell find $(SRC_FOLDER) $(LIBC_FOLDER) -name '*.c')
+ASM_SOURCES  	:= $(shell find $(SRC_FOLDER) -name '*.asm')
 
+#
 C_OBJS   			:= $(patsubst %.c, $(OBJS_FOLDER)/%.c.o, $(C_SOURCES))
 ASM_OBJS 			:= $(patsubst %.asm, $(OBJS_FOLDER)/%.asm.o, $(ASM_SOURCES))
-
 ALL_OBJS := $(C_OBJS) $(ASM_OBJS)
 
 DEPS := $(C_OBJS:.o=.d)

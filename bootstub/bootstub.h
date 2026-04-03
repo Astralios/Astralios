@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fb.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -36,15 +37,6 @@ typedef struct kernel_addr_t
     uint64_t virtual_base;
 } kernel_addr_t;
 
-typedef struct framebuffer_t
-{
-    uint64_t addr;
-    uint64_t width;
-    uint64_t height;
-    uint64_t pitch;
-    uint8_t memory_model;
-} framebuffer_t;
-
 typedef struct module_t
 {
     void *addr;
@@ -65,5 +57,5 @@ typedef struct kernel_params_t
     modules_t modules;
     kernel_addr_t kernel_addr;
     memmap_t memmap;
-    framebuffer_t *framebuffers;
+    fb_t *fbs;
 } kernel_params_t;

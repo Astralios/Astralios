@@ -33,6 +33,18 @@ void *memset(void *s, int c, size_t n)
     return s;
 }
 
+void *memset_u32(void *s, uint32_t c, size_t n)
+{
+    uint32_t *p = (uint32_t *)s;
+
+    for (size_t i = 0; i < n; i++)
+    {
+        p[i] = c;
+    }
+
+    return s;
+}
+
 void *memmove(void *dest, const void *src, size_t n)
 {
     uint8_t *pdest = (uint8_t *)dest;
@@ -74,11 +86,14 @@ int memcmp(const void *s1, const void *s2, size_t n)
 
 void strcpy(char *dest, const char *src)
 {
-    while (*src != '\0')
+    while (*src != '\0') *(dest++) = *(src++);
+}
+
+void strncpy(char *dest, const char *src, size_t size)
+{
+    for (size_t i = 0; i < size && *src; i++)
     {
         *dest = *src;
-        dest++;
-        src++;
     }
 }
 
@@ -98,4 +113,11 @@ int strcmp(const char *s1, const char *s2)
     }
 
     return c1 - c2;
+}
+
+size_t strlen(const char *str)
+{
+    size_t size = 0;
+    while (*str++) size++;
+    return size;
 }

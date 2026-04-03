@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdio.h>
 
 #ifdef __ARCH_X86_64__
 #include "arch/x86_64/io.h"

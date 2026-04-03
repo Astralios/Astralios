@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stddef.h>
-#include "mem/pmm.h"
+#include "mm/pmm.h"
 
 #define MALLOC(size) malloc(size)
 #define CALLOC(nmemb, size) calloc(nmemb, size)

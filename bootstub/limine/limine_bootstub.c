@@ -8,18 +8,18 @@
 
 #define MAX_HEAP_SIZE 1024 * 16
 
-static kernel_params_t kernel_params;
 static char heap[MAX_HEAP_SIZE];
 static uint32_t heap_head = 0;
 
-static void* heap_alloc(size_t size) 
+void* heap_alloc(size_t size) 
 {
     size = (size + 0xF) & ~0xF;
-    if (!size || size > MAX_HEAP_SIZE - heap_head) return NULL;
-    
+    if (!size || size > MAX_HEAP_SIZE - heap_head) return NULL;    
     heap_head += size;
     return (void*)(heap + heap_head - size);
 }
+
+static kernel_params_t kernel_params;
 
 __attribute__((used, section(".limine_requests")))
 static volatile LIMINE_BASE_REVISION(3);
@@ -93,18 +93,27 @@ static memmap_t get_memmap(void)
     return memmap;
 }
 
-static framebuffer_t *get_framebuffers(void)
+static fb_t *get_framebuffers(void)
 {
-    framebuffer_t *framebuffers = (framebuffer_t*)heap_alloc(framebuffer_request.response->framebuffer_count * sizeof(framebuffer_t));
-    for (uint64_t i = 0; i < framebuffer_request.response->framebuffer_count; i++)
+    struct limine_framebuffer_response *res = framebuffer_request.response;
+    fb_t *fbs = (fb_t*)heap_alloc(res->framebuffer_count * sizeof(fb_t));
+    for (size_t i = 0; i < res->framebuffer_count; i++)
     {
-        framebuffers[i].addr = (uint64_t)framebuffer_request.response->framebuffers[i]->address;
-        framebuffers[i].width = framebuffer_request.response->framebuffers[i]->width;
-        framebuffers[i].height = framebuffer_request.response->framebuffers[i]->height;
-        framebuffers[i].pitch = framebuffer_request.response->framebuffers[i]->pitch;
-        framebuffers[i].memory_model = framebuffer_request.response->framebuffers[i]->memory_model;
+        struct limine_framebuffer *fb = res->framebuffers[i];
+        fbs[i].addr = (uint64_t)fb->address;
+        fbs[i].width = fb->width;
+        fbs[i].height = fb->height;
+        fbs[i].bpp = fb->bpp;
+        fbs[i].pitch = fb->pitch;
+        fbs[i].memory_model = fb->memory_model;
+        fbs[i].blue_mask_shift = fb->blue_mask_shift;
+        fbs[i].red_mask_shift = fb->red_mask_shift;
+        fbs[i].green_mask_shift = fb->green_mask_shift;
+        fbs[i].red_mask_size = fb->blue_mask_size;
+        fbs[i].blue_mask_size = fb->blue_mask_size;
+        fbs[i].green_mask_size = fb->blue_mask_size;
     }
-    return framebuffers;
+    return fbs;
 }
 
 static inline uint64_t get_modules_count(void)
@@ -140,7 +149,7 @@ static void load_kernel_params(void)
     kernel_params.hhdm = hhdm_request.response->offset; 
     kernel_params.kernel_addr = get_kernel_address();
     kernel_params.memmap = get_memmap();
-    kernel_params.framebuffers = get_framebuffers();
+    kernel_params.fbs = get_framebuffers();
     get_modules(&kernel_params.modules);
 }
 

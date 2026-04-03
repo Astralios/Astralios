@@ -1,4 +1,4 @@
-#include "arch/x86_64/gdt/gdt.h"
+#include "arch/x86_64/gdt.h"
 #include "misc/debug.h"
 
 gdt_t gdt = {
