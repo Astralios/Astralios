@@ -116,7 +116,7 @@ void ps2_keyboard_callback(void)
     if (sc == 0xF0) 
     {
         released = true;
-        goto end;
+        return;
     }
 
     switch (sc) {
@@ -144,8 +144,5 @@ void ps2_keyboard_callback(void)
     };
     
     released = false;
-end:
-
-    pic_send_eoi(1);
 }
 

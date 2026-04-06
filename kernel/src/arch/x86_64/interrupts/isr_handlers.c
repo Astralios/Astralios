@@ -161,7 +161,6 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     switch (iframe->vector_number) {
     case PIT_INT:
     {
-        pic_send_eoi(0);
         scheduler_switch();
         break;
     }
@@ -170,6 +169,8 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
         break;
     case MOUSE_INT: 
         ps2_mouse_callback();
-        pic_send_eoi(12);
+        break;
     }
+
+    pic_send_eoi(iframe->vector_number);
 }
