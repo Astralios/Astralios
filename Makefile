@@ -6,6 +6,7 @@ BUILD_FOLDER 	:= .build
 BIN_FOLDER   	:= bin
 BIN_NAME     	:= astralisos
 LIBC_FOLDER  	:= libc
+EXTERNAL_FOLDER	:= external
 BOOTSTUB_FOLDER := bootstub
 ISO_ROOT     	:= $(BUILD_FOLDER)/iso_root
 OBJS_FOLDER  	:= $(BUILD_FOLDER)/objs
@@ -14,7 +15,7 @@ CFLAGS    		:= -Wall -Wextra -std=gnu11 -ffreestanding -fno-stack-protector \
              		-fno-stack-check -fno-PIC -m64 -march=x86-64 \
              		-mno-mmx -mno-red-zone -mcmodel=kernel -g \
 					-mno-80387 -msse 
-CPPFLAGS  		:= -I$(BOOTSTUB_FOLDER) -I$(KERNEL_FOLDER)/include -I$(LIBC_FOLDER) -Iexternal/libs -D __ARCH_X86_64__ -D __DEBUG__ -MMD -MP
+CPPFLAGS  		:= -I$(BOOTSTUB_FOLDER) -I$(KERNEL_FOLDER)/include -I$(LIBC_FOLDER) -I$(EXTERNAL_FOLDER) -D __ARCH_X86_64__ -D __DEBUG__ -MMD -MP
 NASMFLAGS 		:= -Wall -f elf64
 
 C_SOURCES    	:= $(shell find $(SRC_FOLDER) $(LIBC_FOLDER) -name '*.c')
