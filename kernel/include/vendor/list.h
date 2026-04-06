@@ -7,33 +7,34 @@
 // Things like list_insert, list_append are all literally the exact same, with the exception 
 // of list_remove which also closes in the array element removed since the linux version didn't clean it up
 
+typedef struct list_t list_t;
 typedef struct list_t 
 {
-    struct list_t *next, *prev;
+    list_t *next, *prev;
 } list_t;
 
-static inline void list_init(list_t *list) {
+static inline void list_init(list_t *list)
+{
     list->next = list;
     list->prev = list;
 }
 
-static inline list_t *list_last(list_t *list) {
-    return list->prev != list ? list->prev : NULL;
+static inline bool list_empty(list_t *list)
+{
+    return list == list->next;
 }
 
-static inline list_t *list_next(list_t *list) {
-    return list->next != list ? list->next : NULL;
-}
-
-static inline void list_insert(list_t *new, list_t *link) {
-    new->prev = link->prev;
-    new->next = link;
+static inline void list_insert(list_t *at, list_t *new)
+{
+    new->next = at;
+    new->prev = at->prev;
     new->prev->next = new;
     new->next->prev = new;
 }
 
-static inline void list_append(list_t *new, list_t *into) {
-    list_insert(new, into->next);
+static inline void list_append(list_t *into, list_t *new)
+{
+    list_insert(into, new);
 }
 
 static inline void list_remove(list_t *list) {
@@ -43,9 +44,4 @@ static inline void list_remove(list_t *list) {
     list->prev = list;
 }
 
-static inline bool list_empty(list_t *list)
-{
-    return list->next == list;
-}
-
-
+#define foreach(var, head) for (list_t *var = (head)->next; var != (head); var = var->next)

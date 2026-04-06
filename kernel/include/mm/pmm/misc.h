@@ -4,7 +4,7 @@
 #include "arch/x86_64/def.h"
 #endif
 
-#include "pmm/pmm.h"
+#include "mm/pmm/pmm.h"
 
 static inline vaddr_t pmm_vpalloc(size_t num_pages)
 {

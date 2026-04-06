@@ -6,10 +6,11 @@
 #include "drivers/ps2/ps2_keyboard.h"
 #include "devices/serial.h"
 #include "misc/debug.h"
-#include "mm/pmm.h"
-#include "mm/vmm.h"
+#include "mm/pmm/pmm.h"
+#include "mm/vmm/vmm.h"
 #include "tasks/sched.h"
 #include "vendor/list.h"
+#include "drivers/ps2/ps2_mouse.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -112,24 +113,24 @@ void isr_exception_handler(exception_frame_t *eframe)
     {
     case 0xE:
     {
-        list_t *curr = lazy_vaddr_list.next;
-        if (!list_empty(curr))
-        {
-            vaddr_t fault_addr = read_cr2();
-            while (curr)
-            {
-                lazilly_alloc_list_t *node = ((lazilly_alloc_list_t*)curr);
-                if (node->region->addr == fault_addr)
-                {
-                    for (size_t i = 0; i < node->region->pages; i++)
-                    {
-                        map_to_pt((page_table_t*)read_cr3(), pmm_alloc(1), node->region->addr + i * PAGE_SIZE, PAGE_P | PAGE_RW);
-                    }
-                    return;
-                }
-                curr = curr->next;
-            }
-        }
+        // list_t *curr = lazy_vaddr_list.next;
+        // if (!list_empty(curr))
+        // {
+        //     vaddr_t fault_addr = read_cr2();
+        //     while (curr)
+        //     {
+        //         lazilly_alloc_list_t *node = ((lazilly_alloc_list_t*)curr);
+        //         if (node->region->addr == fault_addr)
+        //         {
+        //             for (size_t i = 0; i < node->region->pages; i++)
+        //             {
+        //                 map_to_pt((page_table_t*)read_cr3(), pmm_alloc(1), node->region->addr + i * PAGE_SIZE, PAGE_P | PAGE_RW);
+        //             }
+        //             return;
+        //         }
+        //         curr = curr->next;
+        //     }
+        // }
         
         srprintf("\e[0;31m");
         print_eframe(eframe);
@@ -152,6 +153,7 @@ void isr_exception_handler(exception_frame_t *eframe)
 typedef enum interrupt_t {
     PIT_INT = 0x20,
     KBD_INT,
+    MOUSE_INT = 0x2C,
 } interrupt_t;
 
 void isr_interrupt_handler(interrupt_frame_t *iframe)
@@ -166,5 +168,8 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     case KBD_INT:
         ps2_keyboard_callback(); 
         break;
+    case MOUSE_INT: 
+        ps2_mouse_callback();
+        pic_send_eoi(12);
     }
 }

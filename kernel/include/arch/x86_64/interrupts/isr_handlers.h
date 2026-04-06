@@ -29,6 +29,7 @@ extern void isr_exception();
 
 extern void isr_timer_interrupt();
 extern void isr_keyboard_interrupt();
+extern void isr_mouse_interrupt();
 
 typedef struct interrupt_frame_t
 {

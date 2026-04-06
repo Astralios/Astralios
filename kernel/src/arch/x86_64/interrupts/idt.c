@@ -51,6 +51,7 @@ void idt_init(void)
   create_descriptor(0x15, INTERRUPT_GATE, isr_control_protection_exception);
   create_descriptor(0x20, INTERRUPT_GATE, isr_timer_interrupt);
   create_descriptor(0x21, INTERRUPT_GATE, isr_keyboard_interrupt);
+  create_descriptor(0x2C, INTERRUPT_GATE, isr_mouse_interrupt);
   __asm__ volatile(
       "lidt %0\n"
       "sti\n"

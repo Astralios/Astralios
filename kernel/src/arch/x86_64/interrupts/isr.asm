@@ -174,6 +174,11 @@ isr_keyboard_interrupt:
     push 0x21
     jmp isr_interrupt
 
+global isr_mouse_interrupt
+isr_mouse_interrupt:
+    push 0x2C
+    jmp isr_interrupt
+
 global isr_interrupt
 extern isr_interrupt_handler
 isr_interrupt:

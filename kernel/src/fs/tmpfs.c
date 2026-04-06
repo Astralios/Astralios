@@ -1,12 +1,11 @@
 #include "fs/vfs.h"
 #include "mm/kheap.h"
-#include "mm/vmm.h"
+#include "mm/vmm/vmm.h"
 #include "misc/err.h"
 #include "misc/strview.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
 
 #define TMPFS_MAX_NAME_LEN          128
 #define TMPFS_DATA_CHUNK_SIZE       4096

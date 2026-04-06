@@ -3,122 +3,125 @@
 #include "devices/tty.h"
 #include "misc/debug.h"
 #include "misc/err.h"
+#include "misc/bitflags.h"
 #include <stdint.h>
 #include <stdbool.h>
 
-int ps2_wait_write(void)
+static int ps2_wait_write(void)
 {
     size_t tries = 100000;
-    while ((inb(PS2_STATUS) & 0b10) != 0 && (--tries));
+    while ((inb(PS2_STATUS_PORT) & PS2_INPUT_BUFFER_STATUS) != PS2_BUFFER_EMPTY && (--tries));
     return tries == 0 ? -TIMEOUT : SUCCESS;
 }
 
-int ps2_wait_read(void)
+static int ps2_wait_read(void)
 {
     size_t tries = 100000;
-    while ((inb(PS2_STATUS) & 0b1) == 0 && (--tries));
+    while ((inb(PS2_STATUS_PORT) & PS2_OUTPUT_BUFFER_STATUS) == PS2_BUFFER_EMPTY && (--tries));
     return tries == 0 ? -TIMEOUT : SUCCESS;
 }
 
-int ps2_write_data(uint8_t v)
+int ps2_write_data(uint8_t data)
 {
     int e;
     if ((e = ps2_wait_write()) < 0) return e;
-    outb(PS2_DATA, v);
-    return SUCCESS;
+    outb(PS2_DATA_PORT, data);
+    return e;
 }
 
 int ps2_read_data(void)
 {
     int e;
     if ((e = ps2_wait_read()) < 0) return e;
-    return inb(PS2_DATA);
+    return inb(PS2_DATA_PORT);
 }
 
-int ps2_send_cmd(uint8_t cmd)
+int ps2_write_cmd(uint8_t cmd)
 {
     int e;
     if ((e = ps2_wait_write()) < 0) return e;
-    outb(PS2_CMD, cmd);
-    return SUCCESS;
+    outb(PS2_CMD_PORT, cmd);
+    return e;
 }
 
 uint8_t ps2_read_status(void)
 {
-    return inb(PS2_STATUS);
+    return inb(PS2_STATUS_PORT);
 }
 
 int ps2_write_data_to_port2(uint8_t v)
 {
     int e;
-    if ((e = ps2_send_cmd(0xD4)) < 0) return e;
+    if ((e = ps2_write_cmd(0xD4)) < 0) return e;
     if ((e = ps2_write_data(v)) < 0) return e;
     return e;
 }
 
-void ps2_init()
+uint8_t ps2_readControllerConfig(void)
+{
+    ps2_write_cmd(PS2_READ_CONTROLLER_CONFIG);
+    return ps2_read_data();
+}
+
+void ps2_init(void)
 {
     // TODO: USB Init
     // TODO: Check if PS2 controller even exists
-    ps2_send_cmd(PS2_DISABLE_PORT1);
-    ps2_send_cmd(PS2_DISABLE_PORT2);
-
-    while (ps2_read_status() & 0b1) ps2_read_data();
+    ps2_write_cmd(PS2_DISABLE_FIRST_PORT);
+    ps2_write_cmd(PS2_DISABLE_SECOND_PORT);
     
-    ps2_send_cmd(0x20);
-    uint8_t v = ps2_read_data();
-    v &= ~(1 << 0);
-    v &= ~(1 << 1);
-    v &= ~(1 << 6);
+    while ((ps2_read_status() & PS2_OUTPUT_BUFFER_STATUS) != PS2_BUFFER_EMPTY) ps2_read_data();
     
-    ps2_send_cmd(0x60);
-    ps2_write_data(v);    
+    ps2_write_cmd(PS2_READ_CONTROLLER_CONFIG);
+    
+    ps2_controller_config_t data = ps2_read_data();
+    data &= ~(PS2_FIRST_PORT_INTERRUPT_CONFIG);
+    data &= ~(PS2_SECOND_PORT_INTERRUPT_CONFIG);
+    data &= ~(PS2_FIRST_PORT_TRANSLATION_CONFIG);
+    
+    ps2_write_cmd(PS2_WRITE_CONTROLLER_CONFIG);
+    ps2_write_data(data);    
 
-    ps2_send_cmd(0xAA);
-    v = ps2_read_data();
-    if (v == 0x55)
-    {
-        debug("Correct");
-    } else {
-        debug("Incorrect: %x", v); 
-    }
+    ps2_write_cmd(PS2_TEST_CONTROLLER);
+    data = ps2_read_data();
+    if (data != PS2_TEST_CONTROLLER_SUCCESS) return;
 
-    ps2_send_cmd(0xA8);
-    ps2_send_cmd(0x20);
-    v = ps2_read_data();
+    ps2_write_cmd(PS2_ENABLE_SECOND_PORT);
+    ps2_write_cmd(PS2_READ_CONTROLLER_CONFIG);
+    data = ps2_read_data();
+
     bool dual_channel = false;
-    if ((v & (1 << 5)) == 0) dual_channel = true;
+    if ((data & (PS2_SECOND_PORT_CLOCK_CONFIG)) == 0) dual_channel = true;
     if (dual_channel)
     {
-        ps2_send_cmd(0xA7);
-        v &= ~(1 << 1);
-        v &= ~(1 << 5);
-        ps2_send_cmd(0x60);
-        ps2_write_data(v);    
+        ps2_write_cmd(PS2_DISABLE_SECOND_PORT);
+        data &= ~(PS2_SECOND_PORT_INTERRUPT_CONFIG);
+        data &= ~(PS2_SECOND_PORT_CLOCK_CONFIG);
+        ps2_write_cmd(PS2_WRITE_CONTROLLER_CONFIG);
+        ps2_write_data(data);    
     }
 
-    ps2_send_cmd(0xAB);
-    v = ps2_read_data();
-    debug("0xAB Test: %x", v);
-    ps2_send_cmd(0xA9);
-    v = ps2_read_data();
-    debug("0xA9 Test: %x", v);
+    ps2_write_cmd(PS2_TEST_FIRST_PORT);
+    data = ps2_read_data();
+    if (data != PS2_TEST_PORT_SUCCESS) return;
+    ps2_write_cmd(PS2_TEST_SECOND_PORT);
+    data = ps2_read_data();
+    if (data != PS2_TEST_PORT_SUCCESS) return;
 
-    ps2_send_cmd(0xAE);
-    ps2_send_cmd(0xA8);
-    ps2_send_cmd(0x20);
-    v = ps2_read_data();
+    ps2_write_cmd(PS2_ENABLE_FIRST_PORT);
+    ps2_write_cmd(PS2_ENABLE_SECOND_PORT);
+    
+    ps2_write_cmd(PS2_READ_CONTROLLER_CONFIG);
+    data = ps2_read_data();
 
-    v |= (1 << 0);
+    data |= (PS2_FIRST_PORT_INTERRUPT_CONFIG);
 
-    ps2_send_cmd(0x60);
-    ps2_write_data(v);    
+    ps2_write_cmd(PS2_WRITE_CONTROLLER_CONFIG);
+    ps2_write_data(data);    
 
     ps2_write_data(0xFF);
-    v = ps2_read_data();
-    debug("%x", v);
+    data = ps2_read_data();
 }
-
 
 void detect_ps2_device_type()
 {

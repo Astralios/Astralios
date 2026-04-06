@@ -10,6 +10,7 @@
 #include "drivers/ps2/ps2_keyboard.h"
 #include "drivers/ps2/ps2.h"
 #include "misc/debug.h"
+#include "misc/bitflags.h"
 
 static int scancode_set_2[] = {
     KEY_NONE,  KEY_F9, KEY_NONE, KEY_F5,
@@ -63,22 +64,38 @@ ringbuf_t(char, char_ringbuf_t);
 static char keybuf[256] = {0};
 static char_ringbuf_t keyringbuf = { .buf = keybuf, .cap = sizeof(keybuf), .head = 0, .tail = 0 };
 
-void ps2_keyboard_init(void)
+int8_t ps2_keyboard_get_scancode_set(void)
 {
     ps2_write_data(0xF0);
     if (ps2_read_data() != PS2_RES_ACK)
     {
-        return;
+        return -1;
     }
 
     ps2_write_data(0);
     if (ps2_read_data() != PS2_RES_ACK)
     {
-        return;
+        return -1;
     }
 
-    int scancode_set = ps2_read_data();
-    srdebug(ps2_keyboard_init, "scancode set: %x", scancode_set);
+    return ps2_read_data();
+}
+
+static char* controller_config_to_str[] = {
+    "FIRST PORT INTERRUPT",
+    "SECOND PORT INTERRUPT",
+    "SYSTEM FLAG",
+    "SHOULD BE ZERO",
+    "FIRST PORT CLOCK",
+    "SECOND PORT CLOCK",
+    "FIRST PORT TRANSLATION",
+    "MUST BE ZERO",
+};
+
+void ps2_keyboard_init(void)
+{
+    int scancode_set = ps2_keyboard_get_scancode_set();
+    srdebug(ps2_keyboard_init, "scancode set: %d", scancode_set);
 
     ps2_write_data(0xED);
     ps2_write_data(2);
@@ -115,7 +132,7 @@ void ps2_keyboard_callback(void)
         char c;
         if (!shift) c = normal_char_keymap[key];
         else c = shift_char_keymap[key];
-        debug("%c", c);
+        if (c != 0) srdebug(ps2_keyboard_callback, "%c", c);
     }
 
     kbd_event_t ev = { 
