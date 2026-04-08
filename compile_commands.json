@@ -20,7 +20,7 @@
       "-g",
       "-Ikernel/include",
       "-Ibootstub",
-      "-Iexternal/libs",
+      "-Iexternal",
       "-Ilibc",
       "-D",
       "__ARCH_X86_64__",
