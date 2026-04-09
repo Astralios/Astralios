@@ -108,17 +108,19 @@ void ps2_init(void)
     data = ps2_read_data();
     if (data != PS2_TEST_PORT_SUCCESS) return;
 
-    ps2_write_cmd(PS2_ENABLE_FIRST_PORT);
-    ps2_write_cmd(PS2_ENABLE_SECOND_PORT);
-    
     ps2_write_cmd(PS2_READ_CONTROLLER_CONFIG);
     data = ps2_read_data();
+    data &= 0b00000100;
 
     data |= (PS2_FIRST_PORT_INTERRUPT_CONFIG);
+    data |= (PS2_SECOND_PORT_INTERRUPT_CONFIG);
 
     ps2_write_cmd(PS2_WRITE_CONTROLLER_CONFIG);
     ps2_write_data(data);    
 
+    ps2_write_cmd(PS2_ENABLE_FIRST_PORT);
+    ps2_write_cmd(PS2_ENABLE_SECOND_PORT);
+    
     ps2_write_data(0xFF);
     data = ps2_read_data();
 }

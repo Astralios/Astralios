@@ -5,6 +5,7 @@
 #include "arch/x86_64/interrupts/controller/pic.h"
 #include "arch/x86_64/mm/paging.h"
 #include "arch/x86_64/pit.h"
+#include "arch/x86_64/arch.h"
 #include "devices/tty.h"
 #include "devices/serial.h"
 
@@ -56,8 +57,8 @@ void kmain(kernel_params_t *params)
     kernel_params = params;
     serial_init();
     arch_init();
-    pmm_init();
-    kpaging_init(&root_pt);
+    // pmm_init();
+    // kpaging_init(&root_pt);
     // kheap_init(root_pt, hhdm_end, (32 * 1024 * 1024 * 1024l) / PAGE_SIZE);
     //
     // fb_driver0 = fb_driver_init(&kernel_params->fbs[0]);
@@ -67,7 +68,7 @@ void kmain(kernel_params_t *params)
     pic_init();
     ps2_init();
     ps2_keyboard_init();
-    // ps2_mouse_init();
+    ps2_mouse_init();
     // fs_mount(&tmpfs, &vfs_root);
     //
     // path_t initrd = vfs_path_from_abs("/initrd");

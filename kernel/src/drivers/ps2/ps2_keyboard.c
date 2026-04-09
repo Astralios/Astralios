@@ -94,12 +94,6 @@ static char* controller_config_to_str[] = {
 
 void ps2_keyboard_init(void)
 {
-    int scancode_set = ps2_keyboard_get_scancode_set();
-    srdebug(ps2_keyboard_init, "scancode set: %d", scancode_set);
-
-    ps2_write_data(0xED);
-    ps2_write_data(2);
-
     irq_clear_mask(1);
 }
 
