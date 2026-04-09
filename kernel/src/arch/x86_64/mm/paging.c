@@ -12,7 +12,7 @@
 #include "mm/pmm/pmm.h"
 #include "arch/x86_64/cpu.h"
 
-extern kernel_params_t *kernel_params;
+extern kernel_context_t *kernel_context;
 
 static void set_page_entry(page_entry_t *entry)
 {
@@ -103,8 +103,8 @@ static void map_kernel_sections_to_pt(page_table_t *pt, vaddr_t sec_start, vaddr
     // sec_start = align_down(sec_start, PAGE_SIZE);
     // sec_end   = align_up(sec_end, PAGE_SIZE);
 
-    size_t offset = sec_start - (vaddr_t)kernel_params->kernel_addr.virtual_base;
-    paddr_t kernel_paddr = kernel_params->kernel_addr.physical_base;
+    size_t offset = sec_start - (vaddr_t)kernel_context->kernel_addr.virtual_base;
+    paddr_t kernel_paddr = kernel_context->kernel_addr.physical_base;
     map_vrange_to_pt(pt, sec_start, sec_end, kernel_paddr + offset, flags);
 }
 
@@ -128,9 +128,9 @@ vaddr_t hhdm_end = 0;
 
 void map_memmap_to_pt(page_table_t *pt)
 {
-    for (size_t i = 0; i < kernel_params->memmap.entry_count; i++)
+    for (size_t i = 0; i < kernel_context->memmap.entry_count; i++)
     {
-        memmap_entry_t entry = kernel_params->memmap.entries[i];
+        memmap_entry_t entry = kernel_context->memmap.entries[i];
         if (entry.type == MEMMAP_FRAMEBUFFER || entry.type == MEMMAP_USABLE || entry.type == MEMMAP_BOOTLOADER_RECLAIMABLE || entry.type == MEMMAP_EXECUTABLE_AND_MODULES)
         {
             uint64_t base = align_up(entry.base, PAGE_SIZE);

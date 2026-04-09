@@ -19,7 +19,7 @@ void* heap_alloc(size_t size)
     return (void*)(heap + heap_head - size);
 }
 
-static kernel_params_t kernel_params;
+static kernel_context_t kernel_context;
 
 __attribute__((used, section(".limine_requests")))
 static volatile LIMINE_BASE_REVISION(3);
@@ -144,21 +144,21 @@ static void get_modules(modules_t *modules)
     }
 }
 
-static void load_kernel_params(void)
+static void load_kernel_context(void)
 {
-    kernel_params.hhdm = hhdm_request.response->offset; 
-    kernel_params.kernel_addr = get_kernel_address();
-    kernel_params.memmap = get_memmap();
-    kernel_params.fbs = get_framebuffers();
-    get_modules(&kernel_params.modules);
+    kernel_context.hhdm = hhdm_request.response->offset; 
+    kernel_context.kernel_addr = get_kernel_address();
+    kernel_context.memmap = get_memmap();
+    kernel_context.fbs = get_framebuffers();
+    get_modules(&kernel_context.modules);
 }
 
-extern void kmain(kernel_params_t *params);
-// static void (*kmain)(kernel_params_t *params);
+extern void kmain(kernel_context_t *params);
+// static void (*kmain)(kernel_context_t *params);
 void kstart(void) 
 {
-    load_kernel_params();
+    load_kernel_context();
 
-    // kmain = (void (*)(kernel_params_t*))get_elf_entry("../kernel/build/bin/astralisos");
-    kmain(&kernel_params);
+    // kmain = (void (*)(kernel_context_t*))get_elf_entry("../kernel/build/bin/astralisos");
+    kmain(&kernel_context);
 }

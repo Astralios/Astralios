@@ -39,7 +39,7 @@
 
 extern vaddr_t hhdm_end;
 
-kernel_params_t *kernel_params = NULL;
+kernel_context_t *kernel_context = NULL;
 page_table_t *root_pt = NULL;
 
 void kpaging_init(page_table_t **root_pt)
@@ -52,16 +52,16 @@ void kpaging_init(page_table_t **root_pt)
     write_cr3(root_pt_paddr);
 }
 
-void kmain(kernel_params_t *params)
+void kmain(kernel_context_t *params)
 {
-    kernel_params = params;
+    kernel_context = params;
     serial_init();
     arch_init();
     // pmm_init();
     // kpaging_init(&root_pt);
     // kheap_init(root_pt, hhdm_end, (32 * 1024 * 1024 * 1024l) / PAGE_SIZE);
     //
-    // fb_driver0 = fb_driver_init(&kernel_params->fbs[0]);
+    // fb_driver0 = fb_driver_init(&kernel_context->fbs[0]);
     // fb_driver_fill_entirely(fb_driver0, BLUE);
     //
     // kheap_debug();
@@ -75,7 +75,7 @@ void kmain(kernel_params_t *params)
     // inode_t *initrd_inode = NULL;
     // vfs_create(&initrd, INODE_DIR, &initrd_inode);
     //
-    // tar_extract(kernel_params->modules.modules[1].addr);
+    // tar_extract(kernel_context->modules.modules[1].addr);
     //
     // if (!initrd_inode)
     //     debug("no initrd");

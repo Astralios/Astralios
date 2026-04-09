@@ -51,11 +51,11 @@ typedef struct modules_t
     module_t *modules;
 } modules_t;
 
-typedef struct kernel_params_t
+typedef struct kernel_context_t
 {
     uint64_t hhdm;
     modules_t modules;
     kernel_addr_t kernel_addr;
     memmap_t memmap;
     fb_t *fbs;
-} kernel_params_t;
+} kernel_context_t;

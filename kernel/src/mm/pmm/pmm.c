@@ -9,13 +9,13 @@
 #include "misc/debug.h"
 #include "misc/todo.h"
 
-extern kernel_params_t *kernel_params;
+extern kernel_context_t *kernel_context;
 
 static pmm_area_t *area_list  = NULL;
 
 void pmm_init(void)
 {
-    memmap_t memmap = kernel_params->memmap;
+    memmap_t memmap = kernel_context->memmap;
     for (size_t i = 0; i < memmap.entry_count; ++i)
     {
         memmap_entry_t entry = memmap.entries[i];
