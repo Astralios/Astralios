@@ -1,5 +1,5 @@
 #define SMLIB_IMPLEMENTATION
-#include "smlib.h"
+#include "libs/smlib.h"
 
 #include "drivers/ps2/ps2_mouse.h"
 #include "arch/x86_64/interrupts/controller/pic.h"
