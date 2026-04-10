@@ -1,27 +1,13 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
-typedef enum kbd_key_action_t: uint8_t 
+typedef enum kbd_key_action_t: bool
 {
-   KEY_ACTION_RELEASE,
-   KEY_ACTION_PRESS,
+    KEY_ACTION_PRESS,
+    KEY_ACTION_RELEASE,
 } kbd_key_action_t;
-
-typedef enum kbd_key_mode_t: uint8_t 
-{
-    KEY_MODE_SHIFT = 1 << 0,
-    KEY_MODE_CTRL  = 1 << 1,
-    KEY_MODE_ALT   = 1 << 2,
-    KEY_MODE_CAPS  = 1 << 3,
-} kbd_key_mode_t;
-
-typedef struct kbd_event_t 
-{
-    uint16_t            scancode;
-    kbd_key_action_t    action;
-    kbd_key_mode_t      mode;
-} kbd_event_t;
 
 typedef enum kbd_key_t 
 {
@@ -111,7 +97,53 @@ typedef enum kbd_key_t
     KEY_KEYPAD_PERIOD,
     KEY_F11,
     KEY_F12,
+    
+    KEY_PREVIOUS_TRACK,
+    KEY_NEXT_TRACK,
+    KEY_KEYPAD_ENTER,
+    KEY_RIGHT_CONTROL,
+    KEY_MUTE,
+    KEY_CALCULATOR,
+    KEY_PLAY,
+    KEY_STOP,
+    KEY_VOLUME_DOWN,
+    KEY_VOLUME_UP,
+    KEY_WWW_HOME,
+    KEY_KEYPAD_SLASH,
+    KEY_RIGHT_ALT,
+    KEY_HOME,
+    KEY_CURSOR_UP,
+    KEY_PAGE_UP,
+    KEY_CURSOR_LEFT,
+    KEY_CURSOR_RIGHT,
+    KEY_END,
+    KEY_CURSOR_DOWN,
+    KEY_PAGE_DOWN,
+    KEY_INSERT,
+    KEY_DELETE,
+    KEY_LEFT_GUI,
+    KEY_RIGHT_GUI,
+    KEY_APPS,
+    KEY_ACPI_POWER,
+    KEY_ACPI_SLEEP,
+    KEY_ACPI_WAKE,
+    KEY_WWW_SEARCH,
+    KEY_WWW_FAVORITES,
+    KEY_WWW_REFRESH,
+    KEY_WWW_STOP,
+    KEY_WWW_FORWARD,
+    KEY_WWW_BACK,
+    KEY_MY_COMPUTER,
+    KEY_EMAIL,
+    KEY_MEDIA_SELECT,
+    
+    KEY_COUNT,
     // TODO: Add special keys
 } kbd_key_t;
 
-
+#define kbd_raw_data_is_none(data) ((data)->keycode == KEY_NONE)
+typedef struct kbd_raw_data_t
+{
+    kbd_key_action_t    action;
+    kbd_key_t           keycode;
+} kbd_raw_data_t;

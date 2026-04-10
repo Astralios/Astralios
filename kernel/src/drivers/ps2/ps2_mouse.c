@@ -1,16 +1,16 @@
 #include "arch/x86_64/interrupts/controller/pic.h"
 #include "drivers/ps2/ps2.h"
 #include "misc/debug.h"
-#include "misc/bitflags.h"
 #include "drivers/ps2/ps2_mouse.h"
+#include "drivers/ps2/misc.h"
 #include "arch/x86_64/cpu.h"
 
 void ps2_mouse_init(void)
 {
-    ps2_write_cmd(0xD4);
-    ps2_write_data(0xF4);
+    ps2_writeCmd(0xD4);
+    ps2_writeData(0xF4);
 
-    if (ps2_read_data() != PS2_RES_ACK) return;
+    if (ps2_readData() != PS2_RES_ACK) return;
 
     irq_clear_mask(2);
     irq_clear_mask(12);
@@ -35,7 +35,7 @@ int my = 0;
 
 void ps2_mouse_callback(void)
 {
-    uint8_t data = ps2_read_data();
+    uint8_t data = ps2_readData();
     if (data == 0xFF) return;
 
     packet[packet_idx++] = data;

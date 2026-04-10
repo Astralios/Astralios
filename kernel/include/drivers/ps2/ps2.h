@@ -74,10 +74,6 @@ typedef uint8_t ps2_status_register_t;
 typedef uint8_t ps2_controller_config_t;
 
 void    ps2_init(void);
-int     ps2_read_data(void);
-int     ps2_write_data(uint8_t v);
-int     ps2_write_cmd(uint8_t cmd);
 void    detect_ps2_device_type();
 
-uint8_t ps2_readControllerConfig(void);
 

@@ -12,7 +12,7 @@
 #include "drivers/fb.h"
 
 #include "drivers/ps2/ps2.h"
-#include "drivers/ps2/ps2_keyboard.h"
+#include "drivers/ps2/kbd/ps2_kbd.h"
 #include "fs/tar.h"
 
 #include "fs/tmpfs.h"
@@ -52,9 +52,9 @@ void kpaging_init(page_table_t **root_pt)
     write_cr3(root_pt_paddr);
 }
 
-void kmain(kernel_context_t *params)
+void kmain(kernel_context_t *context)
 {
-    kernel_context = params;
+    kernel_context = context;
     serial_init();
     arch_init();
     // pmm_init();
