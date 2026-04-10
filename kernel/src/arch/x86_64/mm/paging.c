@@ -139,7 +139,7 @@ void map_memmap_to_pt(page_table_t *pt)
             if (end > hhdm_end) hhdm_end = end;
             if (entry.type == MEMMAP_FRAMEBUFFER)
             {
-                map_prange_to_pt(pt, base, base + len, to_vaddr(base), PAGE_P | PAGE_RW | PAGE_AT | PAGE_WT);
+                map_prange_to_pt(pt, base, base + len, to_vaddr(base), PAGE_P | PAGE_RW | PAGE_PAT | PAGE_WT);
             } else {
                 map_prange_to_pt(pt, base, base + len, to_vaddr(base), PAGE_P | PAGE_RW);
             }

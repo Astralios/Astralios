@@ -14,7 +14,7 @@ typedef enum page_flags_t
     PAGE_D  = 1 << 6,
     PAGE_S  = 1 << 7,
     PAGE_G  = 1 << 8,
-    PAGE_AT = 1 << 12,
+    PAGE_PAT = 1 << 12,
 } page_flags_t;
 
 typedef uint64_t page_entry_t;
