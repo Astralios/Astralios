@@ -18,8 +18,8 @@ void ps2_mouse_init(void)
 
     if (ps2_readData() != PS2_RES_ACK) return;
 
-    kernel_context->interrupt_controller->set_mask(2);
-    kernel_context->interrupt_controller->set_mask(12);
+    kernel_context->interrupt_controller->clear_mask(2);
+    kernel_context->interrupt_controller->clear_mask(12);
     info(ps2_mouse_init, "Initalized!");
 }
 

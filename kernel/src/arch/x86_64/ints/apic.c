@@ -187,6 +187,7 @@ void apic_init(void)
     pic_disable();
 
     ioapic_register(1, 0x21, get_lapic_id());
+    ioapic_register(12, 0x2C, get_lapic_id());
 
     kernel_context->interrupt_controller = &apic;
     info(apic_init, "Initalized!");
