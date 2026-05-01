@@ -3,7 +3,7 @@
 #include "bootstub.h"
 #include "string.h"
 
-#define LIMINE_API_REVISION 3
+#define LIMINE_API_REVISION 4
 #include "limine.h"
 
 #define MAX_HEAP_SIZE 1024 * 16
@@ -22,36 +22,44 @@ void* heap_alloc(size_t size)
 static kernel_context_t kernel_context;
 
 __attribute__((used, section(".limine_requests")))
-static volatile LIMINE_BASE_REVISION(3);
+static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(4);
+
 __attribute__((used, section(".limine_requests_start")))
-static volatile LIMINE_REQUESTS_START_MARKER;
+static volatile uint64_t limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
+
 __attribute__((used, section(".limine_requests_end")))
-static volatile LIMINE_REQUESTS_END_MARKER;
+static volatile uint64_t limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
 
 __attribute__((used, section(".limine_requests"))) 
 static volatile struct limine_hhdm_request hhdm_request = {
-    .id = LIMINE_HHDM_REQUEST,
-    .revision = 3};
+    .id = LIMINE_HHDM_REQUEST_ID,
+    .revision = 4};
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_memmap_request memmap_request = {
-    .id = LIMINE_MEMMAP_REQUEST,
-    .revision = 3};
+    .id = LIMINE_MEMMAP_REQUEST_ID,
+    .revision = 4};
 
 __attribute__((used, section(".limine_requests"))) 
 static volatile struct limine_executable_address_request kernel_address_request = {
-    .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST,
-    .revision = 3};
+    .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST_ID,
+    .revision = 4};
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
-    .id = LIMINE_FRAMEBUFFER_REQUEST,
-    .revision = 3};
+    .id = LIMINE_FRAMEBUFFER_REQUEST_ID,
+    .revision = 4};
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_module_request module_request = {
-    .id = LIMINE_MODULE_REQUEST,
-    .revision = 3
+    .id = LIMINE_MODULE_REQUEST_ID,
+    .revision = 4
+};
+
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_rsdp_request rsdp_request = {
+    .id = LIMINE_RSDP_REQUEST_ID,
+    .revision = 4
 };
 
 static int from_limine_type(int type) 
@@ -60,6 +68,7 @@ static int from_limine_type(int type)
     {
         case LIMINE_MEMMAP_USABLE: return MEMMAP_USABLE;
         case LIMINE_MEMMAP_RESERVED: return MEMMAP_RESERVED;
+        case LIMINE_MEMMAP_RESERVED_MAPPED: return MEMMAP_RESERVED_MAPPED;
         case LIMINE_MEMMAP_ACPI_RECLAIMABLE: return MEMMAP_ACPI_RECLAIMABLE;
         case LIMINE_MEMMAP_EXECUTABLE_AND_MODULES: return MEMMAP_EXECUTABLE_AND_MODULES;
         case LIMINE_MEMMAP_ACPI_NVS: return MEMMAP_ACPI_NVS;
@@ -144,12 +153,21 @@ static void get_modules(modules_t *modules)
     }
 }
 
+static rsdp_info_t get_rsdp(void)
+{
+    rsdp_info_t info = {0};
+    info.addr = rsdp_request.response->address;
+    info.revision = rsdp_request.response->revision;
+    return info;
+}
+
 static void load_kernel_context(void)
 {
     kernel_context.hhdm = hhdm_request.response->offset; 
     kernel_context.kernel_addr = get_kernel_address();
     kernel_context.memmap = get_memmap();
     kernel_context.fbs = get_framebuffers();
+    kernel_context.rsdp_info = get_rsdp();
     get_modules(&kernel_context.modules);
 }
 

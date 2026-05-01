@@ -1,20 +1,19 @@
 #pragma once
 
 #include <stdint.h>
-#include "arch/x86_64/def.h"
+#include <arch/x86_64/def.h>
 
 typedef enum page_flags_t
 {
-    PAGE_P  = 1 << 0,
-    PAGE_RW = 1 << 1,
-    PAGE_US = 1 << 2,
-    PAGE_WT = 1 << 3,
-    PAGE_CD = 1 << 4,
-    PAGE_A  = 1 << 5,
-    PAGE_D  = 1 << 6,
-    PAGE_S  = 1 << 7,
-    PAGE_G  = 1 << 8,
-    PAGE_PAT = 1 << 12,
+    PAGE_FLAG_PRESENT           = 1 << 0,
+    PAGE_FLAG_READ_WRITE        = 1 << 1,
+    PAGE_FLAG_USER_SUPERVISOR   = 1 << 2,
+    PAGE_FLAG_WRITE_THROUGH     = 1 << 3,
+    PAGE_FLAG_CACHE_DISABLE     = 1 << 4,
+    PAGE_FLAG_ACCESSED          = 1 << 5,
+    PAGE_FLAG_DIRTY             = 1 << 6,
+    PAGE_FLAG_PAT               = 1 << 7,
+    PAGE_FLAG_GLOBAL            = 1 << 8,
 } page_flags_t;
 
 typedef uint64_t page_entry_t;
@@ -22,8 +21,7 @@ typedef struct page_table_t {
     page_entry_t entries[512];
 } page_table_t;
 
-#define PAGE_PHYSICAL_ADDRESS_MASK 0xfffffffff000
-#define PAGE_SIZE 4096
+#define PAGE_PHYSICAL_ADDRESS_MASK  0xfffffffff000
 
 void map_to_pt(page_table_t *pt, paddr_t paddr, vaddr_t vaddr, page_flags_t flags);
 void unmap_from_pt(page_table_t *pt, vaddr_t vaddr);

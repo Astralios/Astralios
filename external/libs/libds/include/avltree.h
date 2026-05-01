@@ -2,15 +2,15 @@
 
 #include <stddef.h>
 
-typedef struct avltree_t avltree_t;
-typedef struct avltree_t {
-    avltree_t   *left, *right, *parent;
-    long        height;
-} avltree_t;
+typedef struct avlnode_t avlnode_t;
+typedef struct avlnode_t
+{
+    avlnode_t *left, *right;
+    int height;
+} avlnode_t;
 
-typedef int (avltree_cmp_fn_t)(avltree_t *a, avltree_t *b);
+typedef int(avltree_cmp_fn_t)(avlnode_t *a, avlnode_t *b);
 
-void        avltree_insert(avltree_t **root, avltree_t *node, avltree_cmp_fn_t cmp_fn);
-avltree_t* avltree_delete(avltree_t **root, avltree_t *node, avltree_cmp_fn_t cmp_fn);
-avltree_t* avltree_find(avltree_t *root, avltree_t *node, avltree_cmp_fn_t cmp_fn);
+avlnode_t *avltree_insert(avlnode_t *at, avlnode_t *node, avltree_cmp_fn_t cmp_fn);
+avlnode_t *avltree_delete(avlnode_t *at, avlnode_t *node);
 

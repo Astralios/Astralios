@@ -1,17 +1,21 @@
-#include "bootstub.h"
 #include <string.h>
+
+#include <bootstub.h>
+
 #ifdef __ARCH_X86_64__
-#include "arch/x86_64/def.h"
+#include <arch/x86_64/def.h>
 #endif
 
-#include "mm/pmm/pmm.h"
-#include "misc/helpers.h"
-#include "misc/debug.h"
-#include "misc/todo.h"
+#include <mm/pmm/pmm.h>
+#include <misc/helpers.h>
+#include <misc/debug.h>
+#include <misc/todo.h>
 
 extern kernel_context_t *kernel_context;
 
 static pmm_area_t *area_list  = NULL;
+
+size_t pmm_free_num_pages = 0;
 
 void pmm_init(void)
 {
@@ -32,13 +36,15 @@ void pmm_init(void)
                 size_t bitmap_size = (num_pages + 7) / 8;
                 
                 pmm_area_t *area = paddr_ptr(base);
-                
+               
+
                 area->free_idx_hint = 0;
                 area->bitmap.size = num_free_pages;
                 area->num_pages = num_free_pages;
                 area->addr = base + align_up(sizeof(pmm_area_t) + bitmap_size, PAGE_SIZE);
                 area->next = area_list;
 
+                pmm_free_num_pages += num_free_pages;
                 memset(area->bitmap.map, 0, bitmap_size);
 
                 area_list = area;
@@ -63,15 +69,13 @@ paddr_t pmm_palloc(size_t num_pages)
             size_t idx = bitmap_find_contiguous_range_from(&curr->bitmap, curr->free_idx_hint, num_pages);
             if (idx != (size_t)(-1))
             {
-                // srdebug(pmm_alloc, "Found free memory at idx within %x region: %zu", curr, idx);
                 if (idx == curr->free_idx_hint) curr->free_idx_hint += num_pages;
                 bitmap_set_range(&curr->bitmap, idx, num_pages); 
                 
                 curr->num_pages -= num_pages;
-                // pmm_free_mem_amount -= num_pages;
+                pmm_free_num_pages -= num_pages;
 
                 paddr_t addr = (curr->addr) + idx * PAGE_SIZE;
-                // srdebug(pmm_alloc, "Allocated at: %x", addr);
                 return addr;
             }
         }
@@ -95,14 +99,17 @@ void pmm_pfree(paddr_t addr, size_t num_pages)
     size_t idx = (addr - (to_paddr(curr->bitmap.map)) - (curr->bitmap.size + 7) / 8) / PAGE_SIZE;
     if (idx < curr->free_idx_hint) curr->free_idx_hint = idx;
     bitmap_unset_range(&curr->bitmap, idx, num_pages);
+    pmm_free_num_pages += num_pages;
 }
 
 paddr_t pmm_alloc(size_t size)
 {
-    todo(pmm_alloc);
+    size_t num_pages = align_up(size, PAGE_SIZE) / PAGE_SIZE;
+    return pmm_palloc(num_pages);
 }
 
 void pmm_free(paddr_t addr, size_t size)
 {
-    todo(pmm_free);
+    size_t num_pages = align_up(size, PAGE_SIZE) / PAGE_SIZE;
+    pmm_pfree(addr, num_pages);
 }

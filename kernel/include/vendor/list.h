@@ -24,6 +24,8 @@ static inline bool list_empty(list_t *list)
     return list == list->next;
 }
 
+// a -> c
+// a -> b -> c
 static inline void list_insert(list_t *at, list_t *new)
 {
     new->next = at;

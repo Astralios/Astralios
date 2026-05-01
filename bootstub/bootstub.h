@@ -3,6 +3,7 @@
 #include "fb.h"
 #include <stdint.h>
 #include <stddef.h>
+#include <sys/types.h>
 
 enum
 {
@@ -15,6 +16,7 @@ enum
     MEMMAP_FRAMEBUFFER,
     MEMMAP_USABLE,
     MEMMAP_UNKNOWN,
+    MEMMAP_RESERVED_MAPPED,
     MEMMAP_ENTRY_TYPE_COUNT,
 };
 
@@ -51,11 +53,28 @@ typedef struct modules_t
     module_t *modules;
 } modules_t;
 
+typedef struct rsdp_info_t
+{
+    uint64_t addr;
+    uint64_t revision;
+} rsdp_info_t;
+
+typedef struct interrupt_controller_t 
+{
+    const char *name;
+    void (*uninit)(void);
+    void (*send_eoi)(uint8_t irq);
+    void (*set_mask)(uint8_t irq);
+    void (*clear_mask)(uint8_t irq);
+} interrupt_controller_t;
+
 typedef struct kernel_context_t
 {
     uint64_t hhdm;
     modules_t modules;
     kernel_addr_t kernel_addr;
     memmap_t memmap;
+    rsdp_info_t rsdp_info;
     fb_t *fbs;
+    const interrupt_controller_t *interrupt_controller;
 } kernel_context_t;

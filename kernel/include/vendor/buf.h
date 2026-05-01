@@ -1,6 +1,8 @@
 #pragma once
 #include <stddef.h>
+
 #define buf_writer_t(type, name) typedef struct name { size_t pos; size_t cap; type *buf; } name;
+
 #define buf_writer_write(buf_writer, val)                                                       \
 do {                                                                                            \
     if (!(buf_writer)->buf) break;                                                              \

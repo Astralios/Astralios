@@ -1,16 +1,20 @@
 #pragma once
 
-#include "arch/x86_64/def.h"
-#include "vendor/list.h"
 #include <stdint.h>
+
+#ifdef __ARCH_X86_64__
+#include <arch/x86_64/def.h>
+#endif
+
+#include <vendor/list.h>
 
 #define TASK_NAME_MAX_LEN   64
 
 typedef struct task_t task_t;
 typedef struct task_t { 
-    list_t list;
+    list_t  list;
     vaddr_t rsp;
-    size_t pid;
+    size_t  pid;
 } task_t;
 
 void yield(void);

@@ -1,9 +1,10 @@
-#include "fs/vfs.h"
-#include "misc/err.h"
-#include "misc/strview.h"
 #include <stddef.h>
 #include <string.h>
-#include "fs/tmpfs.h"
+
+#include <fs/tmpfs.h>
+#include <fs/vfs.h>
+#include <misc/err.h>
+#include <misc/strview.h>
 
 inode_t *vfs_root = NULL;
 

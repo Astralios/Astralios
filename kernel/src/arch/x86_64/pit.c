@@ -1,21 +1,32 @@
-#include "arch/x86_64/pit.h"
-#include "arch/x86_64/io.h"
-#include "arch/x86_64/interrupts/controller/pic.h"
-#include "devices/tty.h"
+#include "bootstub.h"
 #include "misc/debug.h"
+#include <stdbool.h>
 #include <stdint.h>
+#include <arch/x86_64/pit.h>
+#include <arch/x86_64/hw/io.h>
+#include <arch/x86_64/ints/pic.h>
 
-static uint32_t tick = 0;
+extern kernel_context_t *kernel_context;
+static volatile uint64_t tick = 0;
 
-void timer_callback()
+void timer_callback(void)
 {
     tick++;
-    pic_send_eoi(0);
 }
 
-uint32_t pit_get_current_tick()
+uint64_t pit_get_current_tick(void)
 {
     return tick;
+}
+
+void pit_sleep_ms(uint64_t ms)
+{
+    uint64_t prev_tick = tick;
+    while (true)
+    {
+        uint64_t curr_tick = tick;
+        if (curr_tick - prev_tick >= ms) break;
+    }
 }
 
 void pit_init(uint32_t freq)
@@ -27,4 +38,5 @@ void pit_init(uint32_t freq)
     outb(0x40, l);
     outb(0x40, h);
     irq_clear_mask(0);
+    info(pit_init, "Initalized!");
 }

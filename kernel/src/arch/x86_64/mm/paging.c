@@ -1,26 +1,25 @@
 #include <stddef.h>
 #include <stdint.h>
-#include <sys/types.h>
+#include <string.h>
 
-#include "arch/x86_64/mm/paging.h"
-#include "arch/x86_64/def.h"
-#include "arch/x86_64/cpu.h"
-#include "misc/debug.h"
-#include "misc/helpers.h"
-#include "string.h"
-#include "bootstub.h"
-#include "mm/pmm/pmm.h"
-#include "arch/x86_64/cpu.h"
+#include <bootstub.h>
+
+#include <arch/x86_64/mm/paging.h>
+#include <arch/x86_64/def.h>
+#include <arch/x86_64/cpu/cpu.h>
+
+#include <misc/helpers.h>
+#include <mm/pmm/pmm.h>
 
 extern kernel_context_t *kernel_context;
 
 static void set_page_entry(page_entry_t *entry)
 {
-    if (!(*entry & PAGE_P))
+    if (!(*entry & PAGE_FLAG_PRESENT))
     {
         *entry = 0;
-        *entry |= (PAGE_P | PAGE_RW | PAGE_US);
-        *entry |= pmm_alloc(1) & PAGE_PHYSICAL_ADDRESS_MASK;
+        *entry |= (PAGE_FLAG_PRESENT | PAGE_FLAG_READ_WRITE | PAGE_FLAG_USER_SUPERVISOR);
+        *entry |= pmm_palloc(1) & PAGE_PHYSICAL_ADDRESS_MASK;
         memset((void*)to_vaddr((*entry & PAGE_PHYSICAL_ADDRESS_MASK)), 0, PAGE_SIZE);
     }
 }
@@ -100,9 +99,6 @@ void unmap_range_from_pt(page_table_t *pt, vaddr_t from, vaddr_t to)
 
 static void map_kernel_sections_to_pt(page_table_t *pt, vaddr_t sec_start, vaddr_t sec_end, page_flags_t flags)
 {
-    // sec_start = align_down(sec_start, PAGE_SIZE);
-    // sec_end   = align_up(sec_end, PAGE_SIZE);
-
     size_t offset = sec_start - (vaddr_t)kernel_context->kernel_addr.virtual_base;
     paddr_t kernel_paddr = kernel_context->kernel_addr.physical_base;
     map_vrange_to_pt(pt, sec_start, sec_end, kernel_paddr + offset, flags);
@@ -119,9 +115,9 @@ void map_kernel_to_pt(page_table_t *pt)
     extern char mut_data_start[];
     extern char mut_data_end[];
    
-    map_kernel_sections_to_pt(pt, (vaddr_t)text_start, (vaddr_t)text_end, PAGE_P);
-    map_kernel_sections_to_pt(pt, (vaddr_t)rodata_start, (vaddr_t)rodata_end, PAGE_P);
-    map_kernel_sections_to_pt(pt, (vaddr_t)mut_data_start, (vaddr_t)mut_data_end, PAGE_P | PAGE_RW);
+    map_kernel_sections_to_pt(pt, (vaddr_t)text_start, (vaddr_t)text_end, PAGE_FLAG_PRESENT);
+    map_kernel_sections_to_pt(pt, (vaddr_t)rodata_start, (vaddr_t)rodata_end, PAGE_FLAG_PRESENT);
+    map_kernel_sections_to_pt(pt, (vaddr_t)mut_data_start, (vaddr_t)mut_data_end, PAGE_FLAG_PRESENT | PAGE_FLAG_READ_WRITE);
 }
 
 vaddr_t hhdm_end = 0;
@@ -131,17 +127,24 @@ void map_memmap_to_pt(page_table_t *pt)
     for (size_t i = 0; i < kernel_context->memmap.entry_count; i++)
     {
         memmap_entry_t entry = kernel_context->memmap.entries[i];
-        if (entry.type == MEMMAP_FRAMEBUFFER || entry.type == MEMMAP_USABLE || entry.type == MEMMAP_BOOTLOADER_RECLAIMABLE || entry.type == MEMMAP_EXECUTABLE_AND_MODULES)
-        {
+        if (
+            entry.type == MEMMAP_FRAMEBUFFER || 
+            entry.type == MEMMAP_USABLE || 
+            entry.type == MEMMAP_BOOTLOADER_RECLAIMABLE || 
+            entry.type == MEMMAP_EXECUTABLE_AND_MODULES || 
+            entry.type == MEMMAP_ACPI_NVS || 
+            entry.type == MEMMAP_ACPI_RECLAIMABLE || 
+            entry.type == MEMMAP_RESERVED_MAPPED
+        ) {
             uint64_t base = align_up(entry.base, PAGE_SIZE);
             size_t len = align_down(entry.length, PAGE_SIZE);
             vaddr_t end = to_vaddr(base + len);
             if (end > hhdm_end) hhdm_end = end;
             if (entry.type == MEMMAP_FRAMEBUFFER)
             {
-                map_prange_to_pt(pt, base, base + len, to_vaddr(base), PAGE_P | PAGE_RW | PAGE_PAT | PAGE_WT);
+                map_prange_to_pt(pt, base, base + len, to_vaddr(base), PAGE_FLAG_PRESENT | PAGE_FLAG_READ_WRITE | PAGE_FLAG_PAT | PAGE_FLAG_WRITE_THROUGH);
             } else {
-                map_prange_to_pt(pt, base, base + len, to_vaddr(base), PAGE_P | PAGE_RW);
+                map_prange_to_pt(pt, base, base + len, to_vaddr(base), PAGE_FLAG_PRESENT | PAGE_FLAG_READ_WRITE);
             }
         }
     }

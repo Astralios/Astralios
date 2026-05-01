@@ -1,10 +1,10 @@
 #pragma once
 
 #ifdef __ARCH_X86_64__
-#include "arch/x86_64/def.h"
+#include <arch/x86_64/def.h>
 #endif
 
-#include "mm/pmm/pmm.h"
+#include <mm/pmm/pmm.h>
 
 static inline vaddr_t pmm_vpalloc(size_t num_pages)
 {

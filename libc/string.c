@@ -1,6 +1,4 @@
-#include "string.h"
-#include <stddef.h>
-#include <stdint.h>
+#include <string.h>
 
 // GCC and Clang reserve the right to generate calls to the following
 // 4 functions even if they are not directly called.
@@ -108,6 +106,22 @@ int strcmp(const char *s1, const char *s2)
         c2 = *s2;
         if (c1 != c2)
             break;
+        s1++;
+        s2++;
+    }
+
+    return c1 - c2;
+}
+
+int strncmp(const char *s1, const char *s2, size_t n)
+{
+    unsigned char c1 = *s1;
+    unsigned char c2 = *s2;
+    for (size_t i = 0; i < n; ++i)
+    {
+        c1 = *s1;
+        c2 = *s2;
+        if (c1 != c2) break;
         s1++;
         s2++;
     }

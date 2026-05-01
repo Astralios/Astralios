@@ -1,7 +1,8 @@
 #pragma once
-#include "misc/ansii.h"
-#include "misc/kabort.h"
-#include "devices/serial.h"
+
+#include <misc/ansii.h>
+#include <misc/kabort.h>
+#include <devs/serial.h>
 
 typedef enum todo_level_t
 {

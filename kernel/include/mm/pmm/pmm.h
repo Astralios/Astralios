@@ -1,13 +1,14 @@
 #pragma once
-
-#ifdef __ARCH_X86_64__
-#include "arch/x86_64/def.h"
-#endif
-
 #include <stddef.h>
 #include <stdint.h>
 
-#include "vendor/bitmap.h"
+#ifdef __ARCH_X86_64__
+#include <arch/x86_64/def.h>
+#endif
+
+#include <vendor/bitmap.h>
+
+extern size_t pmm_free_num_pages;
 
 typedef struct pmm_area_t pmm_area_t;
 typedef struct pmm_area_t

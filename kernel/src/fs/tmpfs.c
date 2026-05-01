@@ -1,11 +1,11 @@
-#include "fs/vfs.h"
-#include "mm/kheap.h"
-#include "mm/vmm/vmm.h"
-#include "misc/err.h"
-#include "misc/strview.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <fs/vfs.h>
+#include <mm/vmm/vmm.h>
+#include <misc/err.h>
+#include <misc/strview.h>
 
 #define TMPFS_MAX_NAME_LEN          128
 #define TMPFS_DATA_CHUNK_SIZE       4096
@@ -29,12 +29,13 @@ typedef struct tmpfs_inode_t {
     tmpfs_data_t *data;
 } tmpfs_inode_t;
 
+// FIXME: Use actual kmalloc function
 inode_t *tmpfs_inode_create(inode_kind_t kind, const inode_ops_t *ops)
 {
-    inode_t *inode = kheap_alloc_with_bytes(sizeof(inode_t));
+    inode_t *inode = NULL;
     if (inode)
     {
-        tmpfs_inode_t *tmpfs_inode = kheap_alloc_with_bytes(sizeof(tmpfs_inode_t));
+        tmpfs_inode_t *tmpfs_inode = NULL;
         if (tmpfs_inode)
         {
             inode->kind = kind;
@@ -43,7 +44,7 @@ inode_t *tmpfs_inode_create(inode_kind_t kind, const inode_ops_t *ops)
             tmpfs_inode->cap = 0;
             tmpfs_inode->data = NULL;
         } else {
-            kheap_free(inode);
+            // FIXME: Free
             return NULL;
         }
     }
@@ -51,9 +52,10 @@ inode_t *tmpfs_inode_create(inode_kind_t kind, const inode_ops_t *ops)
     return inode;
 }
 
+// FIXME: Use actual kmalloc function
 tmpfs_data_t *tmpfs_new_data_chunk()
 {
-    tmpfs_data_t *data = kheap_alloc_with_bytes(TMPFS_DATA_CHUNK_SIZE);
+    tmpfs_data_t *data = NULL;
     if (data) memset(data, 0,TMPFS_DATA_CHUNK_SIZE);
     return data;
 }
@@ -117,7 +119,7 @@ int tmpfs_create(inode_t *dir, const char *name, size_t name_len, inode_kind_t k
     tmpfs_inode_t *tmpfs_inode = inode->priv;
     if (name_len >= TMPFS_MAX_NAME_LEN)
     {
-        kheap_free(inode);
+        // FIXME: Free
         return -NAME_LIMIT;
     }
 

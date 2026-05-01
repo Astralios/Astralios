@@ -18,7 +18,7 @@ CFLAGS    		:= -Wall -Wextra -std=gnu11 -ffreestanding -fno-stack-protector \
 CPPFLAGS  		:= -I$(BOOTSTUB_FOLDER) -I$(KERNEL_FOLDER)/include -I$(LIBC_FOLDER) -I$(EXTERNAL_FOLDER) -D __ARCH_X86_64__ -D __DEBUG__ -MMD -MP
 NASMFLAGS 		:= -Wall -f elf64
 
-C_SOURCES    	:= $(shell find $(SRC_FOLDER) $(LIBC_FOLDER) -name '*.c')
+C_SOURCES    	:= $(shell find $(SRC_FOLDER) $(LIBC_FOLDER) $(EXTERNAL_FOLDER) -name '*.c')
 ASM_SOURCES  	:= $(shell find $(SRC_FOLDER) -name '*.asm')
 
 #
@@ -68,7 +68,8 @@ run:
 	    -D $(BUILD_FOLDER)/qemu.log \
 	    $(ISO) \
 	    --no-reboot \
-	    --no-shutdown
+	    --no-shutdown \
+		-m 2G
 
 debug:
 	@echo "$(COLOR_BLUE)[QEMU+GDB]$(COLOR_RESET) Starting with GDB server..."

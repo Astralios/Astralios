@@ -1,11 +1,14 @@
-#include "tasks/sched.h"
-#include "arch/x86_64/cpu.h"
-#include "arch/x86_64/mm/paging.h"
-#include "misc/debug.h"
-#include "mm/kheap.h"
-#include "vendor/list.h"
 #include <stddef.h>
 #include <stdint.h>
+
+#ifdef __ARCH_X86_64__
+#include <arch/x86_64/cpu/cpu.h>
+#include <arch/x86_64/mm/paging.h>
+#endif
+
+#include <misc/debug.h>
+
+#include <tasks/sched.h>
 
 #define STACK_PAGES_NUM 4
 
@@ -38,13 +41,14 @@ static void task_postlude(void)
 
 static void idle_loop()
 {
-    info(idle_loop, "Hi");
+    sti();
     hcf();
 }
 
+// FIXME: Use the actual kmalloc function
 task_t* kernel_task_create(void (*entry)()) {
-    task_t *task = kheap_alloc_with_bytes(sizeof(task_t));
-    uint64_t *stack = kheap_alloc(STACK_PAGES_NUM);
+    task_t *task = NULL;
+    uint64_t *stack = NULL;
     uint64_t *rsp = (uint64_t*)((char*)stack + STACK_PAGES_NUM * PAGE_SIZE);
 
     *(--rsp) = (uint64_t)task_postlude;

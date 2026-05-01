@@ -3,11 +3,27 @@
 #include <stddef.h>
 #include "mm/pmm/pmm.h"
 
+// #define hashmap_bucket_t(ktype, vtype)  ktype##_##vtype##_hashmap_bucket_t
+// #define hashmap_t(ktype, vtype)         ktype##_##vtype##_hashmap_t
+
+// #define hashmap_bucket_declare(ktype, vtype)    typedef hashmap_bucket_t(ktype, vtype) {\
+//     ktype key;                                                                          \
+//     vtype val;                                                                          \
+//     size_t hash;                                                                        \
+//     struct hashmap_bucket_t(ktype, vtype) *next;                                        \
+// } hashmap_bucket_t(ktype, vtype)
+
+// #define hashmap_declare(ktype, vtype)           typedef hashmap_t(ktype, vtype) {       \
+//     hashmap_bucket_t(ktype, vtype) **buckets;                                           \
+//     size_t cap;                                                                         \
+//     size_t len;                                                                         \
+// } hashmap_t(ktype, vtype) 
+
+
 #define MALLOC(size) malloc(size)
 #define CALLOC(nmemb, size) calloc(nmemb, size)
 #define FREE(ptr) free(ptr)
-#define PRINTF(fmt, ...) printf(fmt, __VA_ARGS__)
-
+ 
 #define DEFAULT_HM_CAPAPCITY 16
 
 #define bucket(ktype, vtype, name) typedef struct name { size_t hash; ktype key; vtype val; struct name *next; } name

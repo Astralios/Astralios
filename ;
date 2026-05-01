@@ -1,0 +1,228 @@
+#include "mm/vmm/vmm.h"
+#include "arch/x86_64/def.h"
+#include "arch/x86_64/mm/paging.h"
+#include "libs/libds/include/avltree.h"
+#include "misc/debug.h"
+#include "misc/helpers.h"
+#include "mm/pmm/pmm.h"
+#include "vendor/list.h"
+#include <complex.h>
+
+vmm_t* vmm_init(page_table_t *pt, vmm_area_t *area)
+{
+    vmm_t *vmm = (vmm_t*)to_vaddr(pmm_alloc(sizeof(vmm_t)));
+    
+    vmm->pt = pt;
+    vmm->num_pages = area->num_pages;
+    vmm->free_num_pages = area->num_pages;
+    vmm->start_addr = area->addr;
+    vmm->end_addr   = area->addr + PAGE_SIZE * area->num_pages;
+
+    vmm->addr_tree_root = NULL;
+    vmm->size_tree_root = &area->size_tree;
+    return vmm;
+}
+
+static inline vmm_area_t* vmm_area_create(vaddr_t addr, size_t num_pages, vmm_flags_t flags)
+{
+    vmm_area_t *area = (vmm_area_t*)to_vaddr(pmm_alloc(sizeof(vmm_area_t)));
+    
+    area->addr = addr;
+    area->num_pages = num_pages;
+    area->flags = flags;
+    
+    list_init(&area->area_list);
+    avltree_init(&area->size_tree);
+    avltree_init(&area->addr_tree);
+
+    return area;
+}
+
+static inline vmm_area_t* vmm_size_tree_area(avltree_t *node)
+{
+    return container_of(node, vmm_area_t, size_tree);
+}
+
+static inline vmm_area_t* vmm_addr_tree_area(avltree_t *node)
+{
+    return container_of(node, vmm_area_t, addr_tree);
+}
+
+static inline vmm_area_t* vmm_area_list_area(list_t *list)
+{
+    return container_of(list, vmm_area_t, area_list);
+}
+
+static vmm_area_t* vmm_find_area_in_size_tree(vmm_t *vmm, size_t num_pages)
+{
+    avltree_t *node = vmm->size_tree_root;
+    while (node)
+    {
+        vmm_area_t *area = vmm_size_tree_area(node);
+        if (area->num_pages >= num_pages) return area;
+        else node = node->right;     
+    }
+    return NULL;
+}
+
+static vmm_area_t* vmm_find_area_in_addr_tree(vmm_t *vmm, vaddr_t addr)
+{
+    avltree_t *node = vmm->addr_tree_root;
+    while (node)
+    {
+        vmm_area_t *area = vmm_addr_tree_area(node);
+        if (addr < area->addr) node = node->left;
+        else if (addr > area->addr) node = node->right;
+        else return area;
+    }
+    return NULL;
+}
+
+static int vmm_addr_tree_cmp(avltree_t *a, avltree_t *b)
+{
+    vmm_area_t *a_area = vmm_addr_tree_area(a);
+    vmm_area_t *b_area = vmm_addr_tree_area(b);
+    return a_area->addr >= b_area->addr ? 1 : -1;
+}
+
+static int vmm_size_tree_cmp(avltree_t *a, avltree_t *b)
+{
+    vmm_area_t *a_area = vmm_size_tree_area(a);
+    vmm_area_t *b_area = vmm_size_tree_area(b);
+    return a_area->num_pages >= b_area->num_pages ? 1 : -1;
+}
+
+// TODO: Add more
+static page_flags_t vmm_flags_to_page_flags(vmm_flags_t flags)
+{
+    page_flags_t page_flags = 0;
+    if (flags & VMM_FLAG_WRITABLE) page_flags |= PAGE_FLAG_READ_WRITE;
+    return page_flags;
+}
+
+static vmm_area_t* vmm_area_split(vmm_area_t *area, size_t num_pages)
+{
+    if (!area)                          return NULL;
+    if (area->num_pages <= num_pages)   return NULL;
+
+    vmm_area_t *new_area = vmm_area_create(
+            area->addr + num_pages * PAGE_SIZE, 
+            area->num_pages - num_pages, 
+            area->flags
+        );
+
+    area->num_pages -= num_pages;
+
+    return new_area;
+}
+
+vaddr_t vmm_palloc(vmm_t *vmm, size_t num_pages, vmm_flags_t flags)
+{
+    if (!vmm)                       return 0;
+    if (num_pages == 0)             return 0;
+    if (vmm->num_pages < num_pages) return 0;
+    
+    vmm_area_t *area = vmm_find_area_in_size_tree(vmm, num_pages); 
+    if (!area) return 0;
+
+    paddr_t paddr = pmm_palloc(num_pages);
+    if (!paddr) return 0;
+        
+    if (area->num_pages == num_pages)
+    {
+        for (size_t i = 0; i < num_pages; ++i)
+        {
+            page_flags_t page_flags = vmm_flags_to_page_flags(flags);
+            map_to_pt(
+                    vmm->pt, 
+                    paddr + i * PAGE_SIZE, 
+                    area->addr + i * PAGE_SIZE, 
+                    PAGE_FLAG_PRESENT | page_flags
+                );
+        }
+
+        avltree_delete(&vmm->size_tree_root, &area->size_tree); 
+        avltree_insert(&vmm->addr_tree_root, &area->addr_tree, vmm_addr_tree_cmp);
+        
+        area->flags = flags;
+        area->flags &= ~VMM_FLAG_FREE;
+        vmm->free_num_pages -= num_pages; 
+
+        return area->addr;
+    } else {
+        vmm_area_t *new_area = vmm_area_create(area->addr, num_pages, flags);
+        
+        flag_unset(new_area->flags, VMM_FLAG_FREE);
+
+        area->addr += num_pages * PAGE_SIZE;
+        area->num_pages -= num_pages;
+       
+        flags_clear(area->flags);
+        flag_set(area->flags, VMM_FLAG_FREE);
+        
+        for (size_t i = 0; i < num_pages; ++i)
+        {
+            page_flags_t page_flags = vmm_flags_to_page_flags(flags);
+            map_to_pt(
+                    vmm->pt, 
+                    paddr + i * PAGE_SIZE, 
+                    new_area->addr + i * PAGE_SIZE, 
+                    PAGE_FLAG_PRESENT | page_flags
+                );
+        }
+
+        avltree_insert(&vmm->addr_tree_root, &new_area->addr_tree, vmm_addr_tree_cmp);
+
+        avltree_delete(&vmm->size_tree_root, &area->size_tree);
+        avltree_insert(&vmm->size_tree_root, &area->size_tree, vmm_size_tree_cmp);
+ 
+vmm->free_num_pages -= num_pages;
+        return new_area->addr;
+    }
+
+    return 0;
+}
+
+static inline void vmm_area_coalesce(vmm_t *vmm, vmm_area_t *area)
+{
+    vmm_area_t *prev_area = vmm_area_list_area(area->area_list.prev);
+    vmm_area_t *next_area = vmm_area_list_area(area->area_list.next);
+
+    avltree_delete(&vmm->size_tree_root, &area->size_tree);
+
+    if (prev_area && prev_area->flags & VMM_FLAG_FREE)
+    {
+        srdebug(vmm_area_coalesce, "%x", prev_area->addr);
+        avltree_delete(&vmm->size_tree_root, &prev_area->size_tree);
+        area->addr = prev_area->addr;
+        area->num_pages += prev_area->num_pages;
+        pmm_free(to_paddr((char*)prev_area), sizeof(vmm_area_t));
+    }
+
+    if (next_area && next_area->flags & VMM_FLAG_FREE)
+    {
+        srdebug(vmm_area_coalesce, "%x", next_area->addr);
+        avltree_delete(&vmm->size_tree_root, &next_area->size_tree);
+        area->num_pages += next_area->num_pages; 
+        pmm_free(to_paddr((char*)next_area), sizeof(vmm_area_t));
+    }
+}
+
+void vmm_free(vmm_t *vmm, vaddr_t addr)
+{
+    if (vmm == NULL) return;
+    if (addr == 0) return; 
+
+    srdebug(vmm_free, "Freeing:  %x", addr);
+    vmm_area_t *area = vmm_find_area_in_addr_tree(vmm, addr);
+    if (!area) return;
+    avltree_delete(&vmm->addr_tree_root, &area->addr_tree);
+    
+    vmm_area_coalesce(vmm, area);
+
+    avltree_insert(&vmm->size_tree_root, &area->size_tree, vmm_size_tree_cmp);
+    area->flags |= VMM_FLAG_FREE;
+    vmm->free_num_pages += area->num_pages;
+    srdebug(vmm_free, "Freed: %x", addr);
+}
+

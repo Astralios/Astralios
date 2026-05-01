@@ -18,7 +18,6 @@ typedef struct fb_t
     uint8_t blue_mask_shift;
 } fb_t;
 
-
 static inline uint32_t fb_colourFromRGB(fb_t *fb, uint8_t r, uint8_t g, uint8_t b)
 {
     uint32_t colour = 0;

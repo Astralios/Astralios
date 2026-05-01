@@ -1,6 +1,5 @@
 #pragma once
 
-#include "string.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -14,3 +13,6 @@ void strncpy(char *dest, const char *src, size_t size);
 void strcpy(char *dest, const char *src);
 int strcmp(const char *s1, const char *s2);
 size_t strlen(const char *str);
+int strncmp(const char *s1, const char *s2, size_t n);
+
+

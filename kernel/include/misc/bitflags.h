@@ -1,7 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-#include "devices/serial.h"
+#include <stdbool.h>
+#include <devs/serial.h>
 
 static inline void print_flags(uint64_t flags, uint8_t num_bits, char **str_table)
 {

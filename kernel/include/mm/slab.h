@@ -1,7 +1,7 @@
 #pragma once
 
-#include "arch/x86_64/def.h"
-#include "vendor/list.h"
+#include <arch/x86_64/def.h>
+#include <vendor/list.h>
 
 typedef struct slab_cache_t {
     list_t slabs_full, slabs_partial, slabs_free;
