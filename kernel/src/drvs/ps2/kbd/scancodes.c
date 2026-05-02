@@ -1,7 +1,8 @@
+#include "misc/debug.h"
 #include <drvs/ps2/kbd/scancodes.h>
 #include <misc/todo.h>
 
-kbd_key_t scancode_set_1[] = {
+static kbd_key_t scancode_set_1[] = {
     KEY_NONE, KEY_ESC, KEY_1, KEY_2, KEY_3,
     KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0,
     KEY_MINUS, KEY_EQUALS, KEY_BACKSPACE, KEY_TAB,
@@ -20,7 +21,7 @@ kbd_key_t scancode_set_1[] = {
     KEY_NONE, KEY_NONE, KEY_NONE, KEY_F11, KEY_F12
 };
 
-kbd_key_t scancode_set_2[] = {
+static kbd_key_t scancode_set_2[] = {
     KEY_NONE,  KEY_F9, KEY_NONE, KEY_F5,
     KEY_F4, KEY_F1, KEY_F2, KEY_F12,
     KEY_NONE, KEY_F10, KEY_F8, KEY_F6,
@@ -49,7 +50,7 @@ kbd_key_t scancode_set_2[] = {
     KEY_NONE, KEY_NONE, KEY_NONE, KEY_F7,
 };
 
-kbd_key_t scancode_set_2_extended[] = {
+static kbd_key_t scancode_set_2_extended[] = {
     [0x10] = KEY_WWW_SEARCH,
     KEY_RIGHT_ALT,
     [0x14] = KEY_RIGHT_CONTROL,
@@ -100,6 +101,7 @@ kbd_raw_data_t ps2_decodeFromScancode(uint8_t sc, uint8_t set)
 
     switch (set) {
     case 1:
+        todo(ps2_decodeFromScancode, "Unimplemented");
         break;
     case 2:
     {

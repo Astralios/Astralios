@@ -1,6 +1,8 @@
+#include "misc/debug.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <wchar.h>
 
 #ifdef __ARCH_X86_64__
 #include <arch/x86_64/hw/io.h>
@@ -206,3 +208,10 @@ void srprintf(const char *fmt, ...)
 
     va_end(args);
 }
+
+void serial_com1_callback()
+{
+    srdebug(serial_com1_callback, "Called!");
+}
+
+

@@ -39,6 +39,8 @@ static inline void list_append(list_t *into, list_t *new)
     list_insert(into, new);
 }
 
+/// a <-> b <-> c
+/// a <-> c
 static inline void list_remove(list_t *list) {
     list->prev->next = list->next;
     list->next->prev = list->prev;

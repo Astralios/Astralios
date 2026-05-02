@@ -63,7 +63,7 @@ $(OBJS_FOLDER)/%.asm.o: %.asm | directories
 run:
 	@echo "$(COLOR_BLUE)[QEMU]$(COLOR_RESET) Starting virtual machine..."
 	@qemu-system-x86_64 \
-	    -serial stdio \
+		-serial stdio \
 	    -d int \
 	    -D $(BUILD_FOLDER)/qemu.log \
 	    $(ISO) \

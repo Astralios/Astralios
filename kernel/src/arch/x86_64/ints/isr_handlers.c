@@ -118,6 +118,7 @@ typedef enum interrupt_t {
     PIT_INT = 0x20,
     KBD_INT,
     MOUSE_INT = 0x2C,
+    COM1_INT = 0x30,
 } interrupt_t;
 
 void isr_interrupt_handler(interrupt_frame_t *iframe)
@@ -135,6 +136,11 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     case MOUSE_INT: 
         ps2_mouse_callback();
         break;
+    case COM1_INT:
+    {
+        serial_com1_callback();
+        break;
+    }
     }
 
     kernel_context->interrupt_controller->send_eoi(iframe->vector_number);

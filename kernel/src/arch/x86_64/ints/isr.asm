@@ -179,6 +179,11 @@ isr_mouse_interrupt:
     push 0x2C
     jmp isr_interrupt
 
+global isr_com1_interrupt
+isr_com1_interrupt:
+    push 0x30
+    jmp isr_interrupt
+
 global isr_interrupt
 extern isr_interrupt_handler
 isr_interrupt:

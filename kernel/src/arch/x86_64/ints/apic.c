@@ -188,6 +188,7 @@ void apic_init(void)
 
     ioapic_register(1, 0x21, get_lapic_id());
     ioapic_register(12, 0x2C, get_lapic_id());
+    ioapic_register(4, 0x30, get_lapic_id());
 
     kernel_context->interrupt_controller = &apic;
     info(apic_init, "Initalized!");
@@ -197,12 +198,6 @@ void apic_set_mask(uint8_t irq)
 {
     (void)irq;
 }
-
-void apic_clear_mask(uint8_t irq)
-{
-    (void)irq;
-}
-
 
 static const interrupt_controller_t apic = {
     .name = "APIC",

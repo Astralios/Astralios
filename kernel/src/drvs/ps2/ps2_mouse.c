@@ -37,8 +37,8 @@ enum ps2_mouse_packet_bits
 static uint8_t packet_idx = 0;
 static uint8_t packet[3] = {0};
 
-int mx = 0;
-int my = 0;
+#define X_OVERFLOW (1 << 6)
+#define Y_OVERFLOW (1 << 7)
 
 void ps2_mouse_callback(void)
 {
@@ -49,16 +49,9 @@ void ps2_mouse_callback(void)
 
     if (packet_idx == 3)
     {
-        bool xs = packet[0] & (XS);
-        bool ys = packet[0] & (YS);
-        int x = packet[1];
-        int y = packet[2];
-        if (xs) x = -x;
-        if (ys) y = -y;
-        mx += x;
-        my += y;
-    
-        srdebug(ps2_mouse_callback, "x: %d, y: %d", mx, my);
+        int dx = (int8_t)packet[1];
+        int dy = (int8_t)packet[2];
+
         packet_idx = 0;
     }
 }

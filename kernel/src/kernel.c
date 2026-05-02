@@ -31,6 +31,7 @@
 
 kernel_context_t *kernel_context = NULL;
 page_table_t *root_pt = NULL;
+extern vaddr_t hhdm_end;
 
 void kpaging_init(page_table_t **root_pt)
 {
@@ -52,6 +53,7 @@ void kmain(kernel_context_t *context)
     tss_init();    
     pmm_init();
     kpaging_init(&root_pt);
+
     acpi_init();
 
     pic_init();
@@ -61,6 +63,10 @@ void kmain(kernel_context_t *context)
     ps2_keyboard_init();
     ps2_mouse_init();
 
+    vmm_t vmm;
+    vmm_init(&vmm, root_pt, hhdm_end, (32 * 1024 * 1024 * 1024l) / PAGE_SIZE);
+    int *x = vmm_palloc(&vmm, 1, PAGE_FLAG_READ_WRITE);
+    *x = 5;
     
 
     hcf();

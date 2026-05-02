@@ -24,7 +24,6 @@ void create_descriptor(uint8_t index, uint8_t type_and_attributes, void (*handle
 
   idt.descriptors[index] = descriptor;
 }
-
 void idt_init(void)
 {
   create_descriptor(0x00, INTERRUPT_GATE, isr_divide_error);
@@ -53,8 +52,7 @@ void idt_init(void)
   create_descriptor(0x21, INTERRUPT_GATE, isr_keyboard_interrupt);
 
   create_descriptor(0x2C, INTERRUPT_GATE, isr_mouse_interrupt);
-
-
+  create_descriptor(0x30, INTERRUPT_GATE, isr_com1_interrupt);
 
   __asm__ volatile(
       "lidt %0\n"
