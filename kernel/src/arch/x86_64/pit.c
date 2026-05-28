@@ -1,4 +1,3 @@
-#include "bootstub.h"
 #include "misc/debug.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -6,7 +5,6 @@
 #include <arch/x86_64/hw/io.h>
 #include <arch/x86_64/ints/pic.h>
 
-extern kernel_context_t *kernel_context;
 static volatile uint64_t tick = 0;
 
 void timer_callback(void)

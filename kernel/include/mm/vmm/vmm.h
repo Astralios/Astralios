@@ -74,6 +74,7 @@ typedef struct vmm_area_t {
 typedef struct vmm_t {
     page_table_t*   pt;
     list_t          area_list_head;
+    size_t          free_num_pages;
 } vmm_t;
 
 void vmm_init(vmm_t *vmm, page_table_t *pt, vaddr_t addr, size_t num_pages);

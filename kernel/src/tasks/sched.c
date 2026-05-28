@@ -1,93 +1,73 @@
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __ARCH_X86_64__
-#include <arch/x86_64/cpu/cpu.h>
-#include <arch/x86_64/mm/paging.h>
-#endif
-
-#include <misc/debug.h>
-
+#include "arch/x86_64/cpu/cpu.h"
+#include "misc/debug.h"
+#include <mm/vheap.h>
+#include <vendor/list.h>
+#include <stdbool.h>
 #include <tasks/sched.h>
 
-#define STACK_PAGES_NUM 4
+#define TASK_STACK_NUM_PAGES 4
 
-extern void context_switch(task_t *curr, task_t *next);
-extern page_table_t *root_pt;
+extern void switch_to(task_t *from, task_t *to);
 
-size_t next_pid = 0;
+static bool scheduler_ready = false;
+static size_t next_pid = 0;
 
-list_t task_list = { .next = &task_list, .prev = &task_list };
-task_t *curr_task = NULL;
-task_t *idle_task = NULL;
+static list_t running_queue     = LIST_HEAD_INIT(running_queue);
+static list_t reaper_queue      = LIST_HEAD_INIT(reaper_queue);
+static list_t reaper_wait_queue = LIST_HEAD_INIT(reaper_wait_queue);
+static list_t waiting_queue     = LIST_HEAD_INIT(waiting_queue);
 
-void task_schedule(task_t *task)
+static task_t *curr_task   = NULL;
+static task_t *idle_task   = NULL;
+static task_t *reaper_task = NULL;
+
+static task_t dummy_task = {0};
+
+static inline void task_queue_add(list_t *queue, task_t *task)
 {
-    list_insert(&task->list, &task_list);
+    list_insert(queue, &task->list);
 }
 
-void task_unschedule(task_t *task)
+static inline void task_queue_remove(task_t *task)
 {
-    // TODO: Clean up
     list_remove(&task->list);
 }
 
-extern void task_prelude(void);
-static void task_postlude(void)
+void task_switch(task_t *from, task_t *to)
 {
-    task_unschedule(curr_task);   
-    yield();
+    (void)from;
+    curr_task = to;
 }
 
-static void idle_loop()
+void scheduler_schedule(task_t *task)
 {
-    sti();
-    hcf();
+    task_queue_add(&running_queue, task);
 }
 
-// FIXME: Use the actual kmalloc function
-task_t* kernel_task_create(void (*entry)()) {
-    task_t *task = NULL;
-    uint64_t *stack = NULL;
-    uint64_t *rsp = (uint64_t*)((char*)stack + STACK_PAGES_NUM * PAGE_SIZE);
-
-    *(--rsp) = (uint64_t)task_postlude;
-    *(--rsp) = (uint64_t)entry;
-    *(--rsp) = (uint64_t)task_prelude;
-    rsp -= 6;
-
-    task->pid = next_pid++;
-    task->rsp = (uint64_t)rsp;
-    list_init(&task->list);
-
-    return task;
-}
-
-static task_t kernel_task = {0};
-
-void scheduler_init(void)
+void scheduler_unschedule(task_t *task)
 {
-    idle_task = kernel_task_create(idle_loop);
-    curr_task = &kernel_task;
+    task_queue_remove(task);
 }
 
 task_t *scheduler_select_task(void)
 {
-    if (list_empty(&task_list)) return idle_task;
-   
-    task_t *next = (task_t*)task_list.next;
-    list_remove(task_list.next);
-    list_insert(&next->list, &task_list); 
+    if (list_empty(&running_queue)) 
+        return idle_task;
+    task_t *next = (task_t*)running_queue.next;
+    scheduler_unschedule(next);
+    scheduler_schedule(next);
     return next;
 }
 
-// TODO: Swap page tables for user tasks; Set tss rsp0;
-void _context_switch(task_t *from, task_t *to)
+void scheduler_switch(void)
 {
-    (void)from;
-    info(_context_switch, "switching to pid: %zu", to->pid);
-
-    curr_task = to;
+    if (!scheduler_ready) 
+        return;
+    task_t *new_task = scheduler_select_task();
+    if (curr_task != new_task)
+    {
+        switch_to(curr_task, new_task);
+    }
 }
 
 void yield(void)
@@ -97,9 +77,85 @@ void yield(void)
     sti();
 }
 
-void scheduler_switch(void)
+void task_sleep(void)
 {
-    task_t *new_task = scheduler_select_task();
-    if (curr_task != new_task) context_switch(curr_task, new_task);
+    cli();
+    scheduler_unschedule(curr_task);
+    task_queue_add(&waiting_queue, curr_task);
+    sti();
+}
+
+void task_wake_all_up(void)
+{
+    cli();
+
+    list_t *node = waiting_queue.next;
+    while (node != &waiting_queue)
+    {
+        list_t *next = node->next;
+
+        task_t *task = (task_t*)node;
+        task_queue_remove(task);
+        scheduler_schedule(task);
+
+        node = next;
+    }
+    sti();
+}
+
+static inline task_t* task_alloc(void)
+{
+    return vmalloc(sizeof(task_t));
+}
+
+static inline void stack_allocate(stack_t *stack)
+{
+    stack->base = vmalloc(TASK_STACK_NUM_PAGES * PAGE_SIZE);
+    stack->size = TASK_STACK_NUM_PAGES * PAGE_SIZE;
+    stack->sp = (char*)stack->base + stack->size;
+}
+
+static void task_prelude(void)
+{
+    sti();
+}
+
+static void task_postlude(void)
+{
+    cli();
+    scheduler_unschedule(curr_task);
+    scheduler_switch();
+}
+
+task_t *task_create(void (*entry)())
+{
+    task_t *task = task_alloc();
+    stack_allocate(&task->stack);
+    
+    uint64_t *sp = (uint64_t*)task->stack.sp;
+    *(--sp) = (uint64_t)task_postlude;
+    *(--sp) = (uint64_t)entry;
+    *(--sp) = (uint64_t)task_prelude;
+    sp -= 6;
+
+    task->stack.sp = sp;
+    task->pid = next_pid++;
+    list_init(&task->list);
+
+    return task;
+}
+
+static void idle_loop(void)
+{
+    sti();
+    debug("Idling");
+    hcf();
+}
+
+void scheduler_init(void)
+{
+    scheduler_ready = true;
+    idle_task = task_create(idle_loop); 
+    curr_task = &dummy_task;
 }
 

@@ -3,13 +3,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef enum kbd_key_action_t: bool
+typedef enum key_action_t: bool
 {
     KEY_ACTION_PRESS,
     KEY_ACTION_RELEASE,
-} kbd_key_action_t;
+} key_action_t;
 
-typedef enum kbd_key_t 
+typedef enum kbd_key_t
 {
     KEY_NONE,
     KEY_ESC,
@@ -139,11 +139,13 @@ typedef enum kbd_key_t
     
     KEY_COUNT,
     // TODO: Add special keys
-} kbd_key_t;
+} key_t;
 
-#define kbd_raw_data_is_none(data) ((data)->keycode == KEY_NONE)
-typedef struct kbd_raw_data_t
+typedef struct kbd_ev_t
 {
-    kbd_key_action_t    action;
-    kbd_key_t           keycode;
-} kbd_raw_data_t;
+    key_action_t    action;
+    key_t           keycode;
+} kbd_ev_t;
+
+
+

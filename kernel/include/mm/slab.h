@@ -1,18 +1,26 @@
 #pragma once
 
+#include <bootstub.h>
 #include <arch/x86_64/def.h>
+#include <stdint.h>
 #include <vendor/list.h>
 
-typedef struct slab_cache_t {
-    list_t slabs_full, slabs_partial, slabs_free;
-    size_t objsize;
-    // Number of objects contained in each slab
-    size_t objnum;
-} slab_cache_t;
+typedef struct cache_t 
+{
+    list_t slabs_full; 
+    list_t slabs_partial;
+    list_t slabs_free;
 
-typedef struct slab_t {
+    size_t obj_size;
+    size_t obj_per_slab;
+} cache_t;
 
+typedef struct slab_t 
+{
+    cache_t*        cache;
+    list_t          slabs;
+    vaddr_t         mem;
+    size_t          free_idx;
 } slab_t;
 
-void slab_cache_create();
 

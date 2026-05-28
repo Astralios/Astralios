@@ -1,9 +1,9 @@
 TASK_RSP_OFFSET equ 16
 
-extern _context_switch
+extern task_switch
 
-global context_switch
-context_switch:
+global switch_to
+switch_to:
     push rbx
     push rbp
     push r12
@@ -11,7 +11,6 @@ context_switch:
     push r14
     push r15
     
-    ; TODO: Maybe in the future add generators :pensive:
     mov [rdi + TASK_RSP_OFFSET], rsp
     mov rsp, [rsi + TASK_RSP_OFFSET]
 
@@ -21,5 +20,6 @@ context_switch:
     pop r12
     pop rbp
     pop rbx
-    jmp _context_switch
+    jmp task_switch
+
 

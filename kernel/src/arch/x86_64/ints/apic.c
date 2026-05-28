@@ -1,7 +1,7 @@
 #include "arch/x86_64/def.h"
 #include "arch/x86_64/ints/pic.h"
 #include "arch/x86_64/pit.h"
-#include <bootstub.h>
+#include <kernel.h>
 #include <arch/x86_64/mm/paging.h>
 #include <misc/debug.h>
 
@@ -16,8 +16,7 @@
 #define APIC_BASE_MSR 0x1B
 #define APIC_BASE_ENABLE (1ULL << 11)
 
-extern kernel_context_t *kernel_context;
-static const interrupt_controller_t apic;
+static const int_ctrl_t apic;
 
 extern page_table_t *root_pt;
 extern volatile uint64_t lapic_addr;
@@ -139,6 +138,7 @@ void apic_timer_init(void)
     lapic_write(LAPIC_REGISTER_TIMER_INITCNT, 0xFFFFFFFF);
 
     pit_init(1000);
+    
     pit_sleep_ms(10);
     
     uint64_t ticks = (0xFFFFFFFF - lapic_read(LAPIC_REGISTER_TIMER_CURRENT_COUNT)) / 10;
@@ -190,7 +190,7 @@ void apic_init(void)
     ioapic_register(12, 0x2C, get_lapic_id());
     ioapic_register(4, 0x30, get_lapic_id());
 
-    kernel_context->interrupt_controller = &apic;
+    krnl_ctx.interrupt_controller = &apic;
     info(apic_init, "Initalized!");
 }
 
@@ -199,7 +199,7 @@ void apic_set_mask(uint8_t irq)
     (void)irq;
 }
 
-static const interrupt_controller_t apic = {
+static const int_ctrl_t apic = {
     .name = "APIC",
     .send_eoi = apic_send_eoi,
     .set_mask = apic_set_mask,

@@ -1,3 +1,4 @@
+#include "kernel.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -11,7 +12,7 @@
 #include <misc/helpers.h>
 #include <mm/pmm/pmm.h>
 
-extern kernel_context_t *kernel_context;
+extern krnl_ctx_t krnl_ctx;
 
 static void set_page_entry(page_entry_t *entry)
 {
@@ -99,8 +100,8 @@ void unmap_range_from_pt(page_table_t *pt, vaddr_t from, vaddr_t to)
 
 static void map_kernel_sections_to_pt(page_table_t *pt, vaddr_t sec_start, vaddr_t sec_end, page_flags_t flags)
 {
-    size_t offset = sec_start - (vaddr_t)kernel_context->kernel_addr.virtual_base;
-    paddr_t kernel_paddr = kernel_context->kernel_addr.physical_base;
+    size_t offset = sec_start - (vaddr_t)krnl_ctx.bootloader_ctx->krnl_map.virtual_base;
+    paddr_t kernel_paddr = krnl_ctx.bootloader_ctx->krnl_map.physical_base;
     map_vrange_to_pt(pt, sec_start, sec_end, kernel_paddr + offset, flags);
 }
 
@@ -124,9 +125,9 @@ vaddr_t hhdm_end = 0;
 
 void map_memmap_to_pt(page_table_t *pt)
 {
-    for (size_t i = 0; i < kernel_context->memmap.entry_count; i++)
+    for (size_t i = 0; i < krnl_ctx.bootloader_ctx->memmap.num_entries; i++)
     {
-        memmap_entry_t entry = kernel_context->memmap.entries[i];
+        memmap_entry_t entry = krnl_ctx.bootloader_ctx->memmap.entries[i];
         if (
             entry.type == MEMMAP_FRAMEBUFFER || 
             entry.type == MEMMAP_USABLE || 

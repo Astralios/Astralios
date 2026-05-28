@@ -1,9 +1,9 @@
-#include "firmware/acpi/madt.h"
+#include <kernel.h>
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
-#include <bootstub.h>
 
 #ifdef __ARCH_X86_64__
 #include <arch/x86_64/def.h>
@@ -11,6 +11,7 @@
 
 #include <firmware/acpi/acpi.h>
 #include <firmware/acpi/fadt.h>
+#include <firmware/acpi/madt.h>
 #include <misc/debug.h>
 
 #define ACPI_VERSION_2 2
@@ -24,7 +25,6 @@
 #define ENTRY_TYPE_PROCESSOR_LOCAL_2XAPIC   9
 
 
-extern kernel_context_t *kernel_context;
 
 static rsdp_t *rsdp = NULL;
 static xsdp_t *xsdp = NULL;
@@ -42,7 +42,7 @@ static bool do_checksum(acpi_sdt_header *header)
 
 static inline void* acpi_get_rsdp(void)
 {
-    return (void*)kernel_context->rsdp_info.addr;
+    return (void*)krnl_ctx.bootloader_ctx->acpi_rsdp.addr;
 }
 
 acpi_sdt_header *acpi_find_sdt(const char signature[4])

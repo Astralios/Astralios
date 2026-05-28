@@ -1,3 +1,4 @@
+#include "mm/vheap.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -29,13 +30,12 @@ typedef struct tmpfs_inode_t {
     tmpfs_data_t *data;
 } tmpfs_inode_t;
 
-// FIXME: Use actual kmalloc function
 inode_t *tmpfs_inode_create(inode_kind_t kind, const inode_ops_t *ops)
 {
-    inode_t *inode = NULL;
+    inode_t *inode = vmalloc(sizeof(inode_t));
     if (inode)
     {
-        tmpfs_inode_t *tmpfs_inode = NULL;
+        tmpfs_inode_t *tmpfs_inode = vmalloc(sizeof(inode_t));
         if (tmpfs_inode)
         {
             inode->kind = kind;
@@ -44,7 +44,7 @@ inode_t *tmpfs_inode_create(inode_kind_t kind, const inode_ops_t *ops)
             tmpfs_inode->cap = 0;
             tmpfs_inode->data = NULL;
         } else {
-            // FIXME: Free
+            vfree(inode);
             return NULL;
         }
     }
@@ -52,10 +52,9 @@ inode_t *tmpfs_inode_create(inode_kind_t kind, const inode_ops_t *ops)
     return inode;
 }
 
-// FIXME: Use actual kmalloc function
 tmpfs_data_t *tmpfs_new_data_chunk()
 {
-    tmpfs_data_t *data = NULL;
+    tmpfs_data_t *data = vmalloc(TMPFS_DATA_CHUNK_SIZE);
     if (data) memset(data, 0,TMPFS_DATA_CHUNK_SIZE);
     return data;
 }
@@ -129,6 +128,16 @@ int tmpfs_create(inode_t *dir, const char *name, size_t name_len, inode_kind_t k
     parent_data->cap++;
     *ret = inode;
     return SUCCESS;
+}
+
+int tmpfs_rmfile(inode_t *file)
+{
+    tmpfs_inode_t *tmpfs_file = file->priv;
+
+    for (size_t i = 0; i < tmpfs_file->cap; ++i)
+    {
+        
+    }
 }
 
 long tmpfs_read(inode_t *inode, void *buf, size_t count, size_t offset)
@@ -238,3 +247,4 @@ const inode_ops_t dir_ops = {
 const fs_t tmpfs = {
     .mount = tmpfs_mount_root
 };
+

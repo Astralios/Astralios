@@ -1,6 +1,6 @@
-#include <string.h>
+#include <kernel.h>
 
-#include <bootstub.h>
+#include <string.h>
 
 #ifdef __ARCH_X86_64__
 #include <arch/x86_64/def.h>
@@ -11,16 +11,14 @@
 #include <misc/debug.h>
 #include <misc/todo.h>
 
-extern kernel_context_t *kernel_context;
-
 static pmm_area_t *area_list  = NULL;
 
 size_t pmm_free_num_pages = 0;
 
 void pmm_init(void)
 {
-    memmap_t memmap = kernel_context->memmap;
-    for (size_t i = 0; i < memmap.entry_count; ++i)
+    memmap_t memmap = krnl_ctx.bootloader_ctx->memmap;
+    for (size_t i = 0; i < memmap.num_entries; ++i)
     {
         memmap_entry_t entry = memmap.entries[i];
 

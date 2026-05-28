@@ -1,6 +1,7 @@
 #pragma once
 #include <stddef.h>
 #include <stdbool.h>
+
 // NOTE: This implementation is a slightly modified version of that of the linux kernel itself.
 // https://github.com/torvalds/linux/blob/b1bc554e009e3aeed7e4cfd2e717c7a34a98c683/tools/firewire/list.h
 //
@@ -48,4 +49,11 @@ static inline void list_remove(list_t *list) {
     list->prev = list;
 }
 
+static list_t* list_next(list_t* list) {
+    return list->next != list ? list->next : NULL;
+}
+
 #define foreach(var, head) for (list_t *var = (head)->next; var != (head); var = var->next)
+#define LIST_HEAD_INIT(name) { &(name), &(name) }
+
+

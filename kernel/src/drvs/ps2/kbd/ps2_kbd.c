@@ -1,5 +1,6 @@
-#include <bootstub.h>
-
+#include "libs/libds/include/ringbuf.h"
+#include <kernel.h>
+#include <mm/vheap.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -14,16 +15,15 @@
 #include <misc/debug.h>
 #include <misc/helpers.h>
 
-extern kernel_context_t *kernel_context;
-
 static uint8_t current_scancode_set;
-
+ringbuf_t key_ringbuf;
 
 void ps2_keyboard_init(void)
 {
     current_scancode_set = ps2_keyboard_get_scancode_set(); 
-    kernel_context->interrupt_controller->clear_mask(1);
+    krnl_ctx.interrupt_controller->clear_mask(1);
     info(ps2_keyboard_init, "Initalized!");
+    ringbuf_init(&key_ringbuf, 256, sizeof(kbd_ev_t), RINGBUF_MODE_OVERWRITE, vmalloc);
 }
 
 void ps2_keyboard_callback(void)
@@ -31,11 +31,9 @@ void ps2_keyboard_callback(void)
     int sc = ps2_readData();
     if (sc > 0xFF) return;
 
-    kbd_raw_data_t data = ps2_decodeFromScancode(sc, current_scancode_set);
-
-    if (data.keycode != KEY_NONE)
-    {
-        srdebug(ps2_keyboard_callback, "%s: %s", key_to_string(data.keycode), key_action_to_string(data.action));
+    kbd_ev_t ev = ps2_decodeFromScancode(sc, current_scancode_set);
+    if (ev.keycode != KEY_NONE)
+    { 
+        ringbuf_write(&key_ringbuf, &ev);
     }
 }
-

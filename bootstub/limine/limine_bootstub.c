@@ -1,12 +1,16 @@
 #include <stddef.h>
+#include <stdint.h>
 
 #include "bootstub.h"
+#include "fb.h"
 #include "string.h"
 
 #define LIMINE_API_REVISION 4
 #include "limine.h"
 
 #define MAX_HEAP_SIZE 1024 * 16
+
+static bootloader_ctx_t bootloader_ctx;
 
 static char heap[MAX_HEAP_SIZE];
 static uint32_t heap_head = 0;
@@ -18,8 +22,6 @@ void* heap_alloc(size_t size)
     heap_head += size;
     return (void*)(heap + heap_head - size);
 }
-
-static kernel_context_t kernel_context;
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(4);
@@ -79,50 +81,54 @@ static int from_limine_type(int type)
     }
 }
 
-static kernel_addr_t get_kernel_address(void) 
+static void get_krnl_map(krnl_map_t *krnl_map)
 {
-    kernel_addr_t kaddr;
-    kaddr.physical_base = kernel_address_request.response->physical_base;
-    kaddr.virtual_base = kernel_address_request.response->virtual_base;
-    return kaddr;
+    if (kernel_address_request.response)
+    {
+        krnl_map->physical_base = kernel_address_request.response->physical_base;
+        krnl_map->virtual_base = kernel_address_request.response->virtual_base;
+    }
 }
 
-static memmap_t get_memmap(void)
+static void get_memmap(memmap_t *memmap)
 {
-    memmap_t memmap;
-    memmap.entry_count = memmap_request.response->entry_count;
-    memmap.entries = (memmap_entry_t*)heap_alloc(memmap.entry_count * sizeof(memmap_entry_t));
-    for (uint64_t i = 0; i < memmap.entry_count; i++)
+    if (memmap_request.response)
     {
-        memmap.entries[i].base = memmap_request.response->entries[i]->base;
-        memmap.entries[i].length = memmap_request.response->entries[i]->length;
-        memmap.entries[i].type = from_limine_type(memmap_request.response->entries[i]->type);
+        memmap->num_entries = memmap_request.response->entry_count;
+        memmap->entries = (memmap_entry_t*)heap_alloc(memmap->num_entries * sizeof(memmap_entry_t));
+        for (uint64_t i = 0; i < memmap->num_entries; i++)
+        {
+            memmap->entries[i].base = memmap_request.response->entries[i]->base;
+            memmap->entries[i].length = memmap_request.response->entries[i]->length;
+            memmap->entries[i].type = from_limine_type(memmap_request.response->entries[i]->type);
+        }
     }
-
-    return memmap;
 }
 
-static fb_t *get_framebuffers(void)
+static void get_fbs(fb_t **buf)
 {
-    struct limine_framebuffer_response *res = framebuffer_request.response;
-    fb_t *fbs = (fb_t*)heap_alloc(res->framebuffer_count * sizeof(fb_t));
-    for (size_t i = 0; i < res->framebuffer_count; i++)
+    struct limine_framebuffer_response *res =framebuffer_request.response;
+    if (res)
     {
-        struct limine_framebuffer *fb = res->framebuffers[i];
-        fbs[i].addr = (uint64_t)fb->address;
-        fbs[i].width = fb->width;
-        fbs[i].height = fb->height;
-        fbs[i].bpp = fb->bpp;
-        fbs[i].pitch = fb->pitch;
-        fbs[i].memory_model = fb->memory_model;
-        fbs[i].blue_mask_shift = fb->blue_mask_shift;
-        fbs[i].red_mask_shift = fb->red_mask_shift;
-        fbs[i].green_mask_shift = fb->green_mask_shift;
-        fbs[i].red_mask_size = fb->blue_mask_size;
-        fbs[i].blue_mask_size = fb->blue_mask_size;
-        fbs[i].green_mask_size = fb->blue_mask_size;
+        *buf = (fb_t*)heap_alloc(res->framebuffer_count * sizeof(fb_t));
+        fb_t *fbs = *buf;
+        for (size_t i = 0; i < res->framebuffer_count; i++)
+        {
+            struct limine_framebuffer *fb = res->framebuffers[i];
+            fbs[i].addr = (uint64_t)fb->address;
+            fbs[i].width = fb->width;
+            fbs[i].height = fb->height;
+            fbs[i].bpp = fb->bpp;
+            fbs[i].pitch = fb->pitch;
+            fbs[i].memory_model = fb->memory_model;
+            fbs[i].blue_mask_shift = fb->blue_mask_shift;
+            fbs[i].red_mask_shift = fb->red_mask_shift;
+            fbs[i].green_mask_shift = fb->green_mask_shift;
+            fbs[i].red_mask_size = fb->blue_mask_size;
+            fbs[i].blue_mask_size = fb->blue_mask_size;
+            fbs[i].green_mask_size = fb->blue_mask_size;
+        }
     }
-    return fbs;
 }
 
 static inline uint64_t get_modules_count(void)
@@ -144,7 +150,7 @@ static void get_modules(modules_t *modules)
 {
     uint64_t modules_count = get_modules_count();
     if (modules_count == 0) return;
-    modules->modules_count = modules_count;
+    modules->num_modules = modules_count;
     modules->modules = (module_t*)heap_alloc(sizeof(module_t) * modules_count);
 
     for (size_t i = 0; i < modules_count; i++)
@@ -153,30 +159,28 @@ static void get_modules(modules_t *modules)
     }
 }
 
-static rsdp_info_t get_rsdp(void)
+static void get_rsdp(acpi_rsdp_t *rsdp)
 {
-    rsdp_info_t info = {0};
-    info.addr = rsdp_request.response->address;
-    info.revision = rsdp_request.response->revision;
-    return info;
+    struct limine_rsdp_response *res = rsdp_request.response;
+    if (res)
+    {
+        rsdp->addr = (uint64_t)res->address;
+        rsdp->revision = res->revision;
+    }
+}
+static void load_bootloader_ctx(void)
+{
+    get_krnl_map(&bootloader_ctx.krnl_map);
+    get_memmap(&bootloader_ctx.memmap);
+    get_fbs(&bootloader_ctx.fbs);
+    get_rsdp(&bootloader_ctx.acpi_rsdp);
+    get_modules(&bootloader_ctx.modules);
+    bootloader_ctx.hhdm = hhdm_request.response->offset;
 }
 
-static void load_kernel_context(void)
-{
-    kernel_context.hhdm = hhdm_request.response->offset; 
-    kernel_context.kernel_addr = get_kernel_address();
-    kernel_context.memmap = get_memmap();
-    kernel_context.fbs = get_framebuffers();
-    kernel_context.rsdp_info = get_rsdp();
-    get_modules(&kernel_context.modules);
-}
-
-extern void kmain(kernel_context_t *params);
-// static void (*kmain)(kernel_context_t *params);
+extern void kmain(bootloader_ctx_t *ctx);
 void kstart(void) 
 {
-    load_kernel_context();
-
-    // kmain = (void (*)(kernel_context_t*))get_elf_entry("../kernel/build/bin/astralisos");
-    kmain(&kernel_context);
+    load_bootloader_ctx();
+    kmain(&bootloader_ctx);
 }

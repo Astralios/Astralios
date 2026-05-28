@@ -1,7 +1,9 @@
 #pragma once
 
-typedef struct equeue_t
+#include <stdint.h>
+typedef struct queue_t
 {
-
-} equeue_t;
+    uintptr_t tail, head;
+    void *buf;
+} queue_t;
 

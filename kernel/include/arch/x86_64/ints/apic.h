@@ -1,8 +1,8 @@
 #pragma once
 
-#include <bootstub.h>
+#include <kernel.h>
 
-extern interrupt_controller_t apic;
+extern int_ctrl_t apic;
 
 void apic_init(void);
 

@@ -10,18 +10,26 @@
 
 #define TASK_NAME_MAX_LEN   64
 
+typedef struct {
+    void*  sp;
+    void*  base;
+    size_t size;
+} stack_t;
+
 typedef struct task_t task_t;
 typedef struct task_t { 
     list_t  list;
-    vaddr_t rsp;
+    stack_t stack;
     size_t  pid;
 } task_t;
 
 void yield(void);
 void scheduler_init(void);
 void scheduler_switch(void);
+task_t *task_create(void (*entry)());
+void scheduler_schedule(task_t *task);
+void scheduler_unschedule(task_t *task);
+void task_sleep(void);
+void task_wake_all_up(void);
 
-task_t* kernel_task_create(void (*entry)());
-void task_schedule(task_t *task);
-void task_unschedule(task_t *task);
 

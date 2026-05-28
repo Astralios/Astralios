@@ -3,7 +3,6 @@
 #include "fb.h"
 #include <stdint.h>
 #include <stddef.h>
-#include <sys/types.h>
 
 enum
 {
@@ -29,52 +28,43 @@ typedef struct memmap_entry_t
 
 typedef struct memmap_t
 {
-    memmap_entry_t *entries;
-    size_t entry_count;
+    memmap_entry_t* entries;
+    size_t          num_entries;
 } memmap_t;
 
-typedef struct kernel_addr_t
+typedef struct krnl_map_t
 {
     uint64_t physical_base;
     uint64_t virtual_base;
-} kernel_addr_t;
+} krnl_map_t;
 
 typedef struct module_t
 {
-    void *addr;
+    void*    addr;
     uint64_t size;
-    char *path;
-    // char *string;
+    char*    path;
 } module_t;
 
 typedef struct modules_t
 {
-    uint64_t modules_count;
-    module_t *modules;
+    uint64_t  num_modules;
+    module_t* modules;
 } modules_t;
 
-typedef struct rsdp_info_t
+typedef struct acpi_rsdp_t
 {
     uint64_t addr;
     uint64_t revision;
-} rsdp_info_t;
+} acpi_rsdp_t;
 
-typedef struct interrupt_controller_t 
+typedef struct bootloader_ctx_t
 {
-    const char *name;
-    void (*uninit)(void);
-    void (*send_eoi)(uint8_t irq);
-    void (*set_mask)(uint8_t irq);
-    void (*clear_mask)(uint8_t irq);
-} interrupt_controller_t;
+    uint64_t    hhdm;
+    modules_t   modules;
+    krnl_map_t  krnl_map;
+    acpi_rsdp_t acpi_rsdp;
+    memmap_t    memmap;
+    fb_t*       fbs;
+} bootloader_ctx_t;
 
-typedef struct kernel_context_t
-{
-    uint64_t hhdm;
-    modules_t modules;
-    kernel_addr_t kernel_addr;
-    memmap_t memmap;
-    rsdp_info_t rsdp_info;
-    fb_t *fbs;
-    const interrupt_controller_t *interrupt_controller;
-} kernel_context_t;
+

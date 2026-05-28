@@ -1,8 +1,10 @@
+#include "libs/libinput/include/kbd.h"
 #include "misc/debug.h"
 #include <drvs/ps2/kbd/scancodes.h>
 #include <misc/todo.h>
+#include <stdbool.h>
 
-static kbd_key_t scancode_set_1[] = {
+static key_t scancode_set_1[] = {
     KEY_NONE, KEY_ESC, KEY_1, KEY_2, KEY_3,
     KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0,
     KEY_MINUS, KEY_EQUALS, KEY_BACKSPACE, KEY_TAB,
@@ -21,7 +23,7 @@ static kbd_key_t scancode_set_1[] = {
     KEY_NONE, KEY_NONE, KEY_NONE, KEY_F11, KEY_F12
 };
 
-static kbd_key_t scancode_set_2[] = {
+static key_t scancode_set_2[] = {
     KEY_NONE,  KEY_F9, KEY_NONE, KEY_F5,
     KEY_F4, KEY_F1, KEY_F2, KEY_F12,
     KEY_NONE, KEY_F10, KEY_F8, KEY_F6,
@@ -50,7 +52,7 @@ static kbd_key_t scancode_set_2[] = {
     KEY_NONE, KEY_NONE, KEY_NONE, KEY_F7,
 };
 
-static kbd_key_t scancode_set_2_extended[] = {
+static key_t scancode_set_2_extended[] = {
     [0x10] = KEY_WWW_SEARCH,
     KEY_RIGHT_ALT,
     [0x14] = KEY_RIGHT_CONTROL,
@@ -93,11 +95,11 @@ static kbd_key_t scancode_set_2_extended[] = {
 
 // TODO: Scancode set 3 support
 
-kbd_raw_data_t ps2_decodeFromScancode(uint8_t sc, uint8_t set)
+kbd_ev_t ps2_decodeFromScancode(uint8_t sc, uint8_t set)
 {
     static bool released = false;
-    
-    kbd_raw_data_t raw_data = {0};
+
+    kbd_ev_t ev = {0};
 
     switch (set) {
     case 1:
@@ -119,9 +121,18 @@ kbd_raw_data_t ps2_decodeFromScancode(uint8_t sc, uint8_t set)
             goto end;
         }
 
-        if (extended) raw_data.keycode = scancode_set_2_extended[sc];
-        else raw_data.keycode = scancode_set_2[sc];
-        raw_data.action = released ? KEY_ACTION_RELEASE : KEY_ACTION_PRESS;
+        
+        if (extended)
+        {
+            ev.keycode = scancode_set_2_extended[sc];
+        }
+        else 
+        {
+            ev.keycode = scancode_set_2[sc];
+        }
+
+        ev.action = released ? KEY_ACTION_RELEASE : KEY_ACTION_PRESS;
+
         released = false;
         extended = false;
         break;
@@ -134,5 +145,5 @@ kbd_raw_data_t ps2_decodeFromScancode(uint8_t sc, uint8_t set)
     }
 
 end:
-    return raw_data;   
+    return ev;   
 }

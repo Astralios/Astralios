@@ -1,7 +1,7 @@
 #include <misc/helpers.h>
 #include <drvs/ps2/kbd/misc.h>
 
-const char *key_to_string(kbd_key_t key) {
+const char *key_to_string(key_t key) {
     switch (key) {
         case KEY_NONE: return stringify(KEY_NONE);
         case KEY_ESC: return stringify(KEY_ESC);
@@ -132,7 +132,7 @@ const char *key_to_string(kbd_key_t key) {
     }
 }
 
-const char *key_action_to_string(kbd_key_action_t action)
+const char *key_action_to_string(key_action_t action)
 {
     switch (action)
     {

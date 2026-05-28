@@ -1,17 +1,15 @@
-#include "arch/x86_64/def.h"
-#include "misc/debug.h"
-#include <bootstub.h>
+#include <kernel.h>
+
+#include <misc/debug.h>
+
 #include <arch/x86_64/ints/pic.h>
-
-#ifdef __ARCH_X86_64__
 #include <arch/x86_64/hw/io.h>
-#endif
 
-extern kernel_context_t *kernel_context;
-static const interrupt_controller_t pic;
+static const int_ctrl_t pic;
 
 void pic_send_eoi(uint8_t irq)
 {
+    // TODO: Check if I have to shift the irq number
     if (irq >= 8) outb(PIC2_CMD, PIC_EOI);
     outb(PIC1_CMD, PIC_EOI);
     io_wait();
@@ -33,7 +31,7 @@ void pic_init() {
     outb(PIC1_DATA, 0b11111111);
     outb(PIC2_DATA, 0b11111111);
 
-    kernel_context->interrupt_controller = &pic;
+    krnl_ctx.interrupt_controller = &pic;
     info(pic_init, "Initalized!");
 }
 
@@ -70,7 +68,7 @@ void irq_clear_mask(uint8_t IRQline) {
     outb(port, value);        
 }
 
-static const interrupt_controller_t pic = {
+static const int_ctrl_t pic = {
     .name = "PIC",
     .uninit = pic_disable,
     .send_eoi = pic_send_eoi,

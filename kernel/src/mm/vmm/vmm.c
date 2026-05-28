@@ -1,23 +1,26 @@
-#include "mm/vmm/vmm.h"
-#include "arch/x86_64/cpu/cpu.h"
-#include "arch/x86_64/def.h"
-#include "arch/x86_64/mm/paging.h"
 #include "misc/debug.h"
-#include "mm/pmm/pmm.h"
-#include "vendor/list.h"
+#ifdef __ARCH_X86_64__
+#include <arch/x86_64/cpu/cpu.h>
+#include <arch/x86_64/def.h>
+#include <arch/x86_64/mm/paging.h>
+#endif
+
+#include <mm/pmm/pmm.h>
+#include <mm/vmm/vmm.h>
 #include <mm/vmm/misc.h>
+#include <vendor/list.h>
 #include <string.h>
 
 void vmm_init(vmm_t *vmm, page_table_t *pt, vaddr_t addr, size_t num_pages)
 {
     vmm->pt = pt;
- 
+    vmm->free_num_pages = num_pages;
+
     vmm_area_t *area = paddr_ptr(pmm_alloc(sizeof(vmm_area_t)));
     area->addr = addr;
     area->num_pages = num_pages;
     area->state = FREE;
-    area->page_flags = 0;
-    
+    area->page_flags = 0; 
 
     list_init(&vmm->area_list_head);
     list_append(&vmm->area_list_head, &area->area_list);
@@ -70,7 +73,6 @@ static void vmm_area_split(vmm_area_t *area, size_t num_pages)
 vaddr_t vmm_palloc(vmm_t *vmm, size_t num_pages, page_flags_t page_flags)
 {
     if (num_pages == 0) return 0;
-
     vmm_area_t *area = vmm_find_sufficiently_sized_area(vmm, num_pages);
     if (!area)
       return 0;
@@ -82,6 +84,7 @@ vaddr_t vmm_palloc(vmm_t *vmm, size_t num_pages, page_flags_t page_flags)
     area->page_flags = page_flags;
     vmm_map_area(vmm, area);
 
+    vmm->free_num_pages -= num_pages;
     return area->addr;
 }
 
@@ -93,24 +96,35 @@ static void vmm_unmap_area(vmm_t *vmm, vmm_area_t *area)
   }
 }
 
-static void vmm_area_try_merge_with_neighbors(vmm_area_t *area)
+static void vmm_area_try_merge_with_neighbors(vmm_t *vmm, vmm_area_t *area)
 {
-    vmm_area_t *prev_area = container_of(area->area_list.prev, vmm_area_t, area_list);
-    vmm_area_t *next_area = container_of(area->area_list.next, vmm_area_t, area_list);
-
-    if (prev_area && prev_area->state == FREE)
+    if (area->area_list.prev != &vmm->area_list_head)
     {
-        area->addr = prev_area->addr;
-        area->num_pages += prev_area->num_pages;
-        list_remove(&prev_area->area_list);
-        pmm_free(to_paddr(prev_area), sizeof(vmm_area_t));
+        vmm_area_t *prev_area =
+            container_of(area->area_list.prev, vmm_area_t, area_list);
+
+        if (prev_area->state == FREE)
+        {
+            area->addr = prev_area->addr;
+            area->num_pages += prev_area->num_pages;
+
+            list_remove(&prev_area->area_list);
+            pmm_free(to_paddr(prev_area), sizeof(vmm_area_t));
+        }
     }
 
-    if (next_area && next_area->state == FREE)
+    if (area->area_list.next != &vmm->area_list_head)
     {
-        area->num_pages += next_area->num_pages;
-        list_remove(&next_area->area_list);
-        pmm_free(to_paddr(next_area), sizeof(vmm_area_t));
+        vmm_area_t *next_area =
+            container_of(area->area_list.next, vmm_area_t, area_list);
+
+        if (next_area->state == FREE)
+        {
+            area->num_pages += next_area->num_pages;
+
+            list_remove(&next_area->area_list);
+            pmm_free(to_paddr(next_area), sizeof(vmm_area_t));
+        }
     }
 }
 
@@ -120,9 +134,13 @@ void vmm_free(vmm_t *vmm, vaddr_t addr)
         return;
 
     vmm_area_t *area = vmm_find_area(vmm, addr);
+    if (!area) return;
     area->state = FREE;
     area->page_flags = 0;
 
     vmm_unmap_area(vmm, area);
-    vmm_area_try_merge_with_neighbors(area);
+    vmm_area_try_merge_with_neighbors(vmm, area);
+
+    vmm->free_num_pages += area->num_pages;
 }
+

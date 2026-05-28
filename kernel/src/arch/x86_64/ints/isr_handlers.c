@@ -1,5 +1,5 @@
-#include "arch/x86_64/def.h"
 #include "arch/x86_64/pit.h"
+#include "misc/debug.h"
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -8,9 +8,9 @@
 #include <arch/x86_64/ints/isr_handlers.h>
 #include <arch/x86_64/ints/pic.h>
 #include <drvs/ps2/kbd/ps2_kbd.h>
+#include <drvs/ps2/ps2_mouse.h>
 #include <devs/serial.h>
 #include <tasks/sched.h>
-#include <drvs/ps2/ps2_mouse.h>
 
 typedef enum exception_t {
     EXCEPTION_DIVISION_ERROR,
@@ -126,8 +126,10 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     switch (iframe->vector_number) {
     case PIT_INT:
     {
+    
+        krnl_ctx.interrupt_controller->send_eoi(iframe->vector_number);
         timer_callback();
-        // scheduler_switch();
+        scheduler_switch();
         break;
     }
     case KBD_INT:
@@ -143,5 +145,5 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     }
     }
 
-    kernel_context->interrupt_controller->send_eoi(iframe->vector_number);
+    krnl_ctx.interrupt_controller->send_eoi(iframe->vector_number);
 }
