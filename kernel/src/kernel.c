@@ -319,7 +319,7 @@ void redner()
 void task_a_entry()
 {
     static int count = 0;
-    while (1)
+    while (count != 20)
     {
         cli();
         count++;

@@ -1,5 +1,6 @@
 #include "arch/x86_64/cpu/cpu.h"
 #include "misc/debug.h"
+#include "misc/helpers.h"
 #include <mm/vheap.h>
 #include <vendor/list.h>
 #include <stdbool.h>
@@ -124,6 +125,13 @@ static void task_postlude(void)
 {
     cli();
     scheduler_unschedule(curr_task);
+    task_queue_add(&reaper_queue, curr_task);
+    while (!list_empty(&reaper_wait_queue))
+    {
+        task_t *reaper = container_of(reaper_wait_queue.next, task_t, list);
+        scheduler_schedule(reaper);
+    }
+
     scheduler_switch();
 }
 
@@ -152,10 +160,27 @@ static void idle_loop(void)
     hcf();
 }
 
+static void reaper_task_entry(void)
+{   
+    cli();
+    while (!list_empty(&reaper_queue))
+    {
+        task_t *task = (task_t*)reaper_queue.next;
+        task_queue_remove(task); 
+        vfree(task->stack.base);
+        vfree(task);
+    }
+
+    scheduler_unschedule(curr_task);
+    sti();
+    yield();
+}
+
 void scheduler_init(void)
 {
     scheduler_ready = true;
     idle_task = task_create(idle_loop); 
+    reaper_task = task_create(reaper_task_entry);
     curr_task = &dummy_task;
 }
 
