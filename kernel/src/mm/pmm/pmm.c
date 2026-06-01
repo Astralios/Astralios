@@ -2,10 +2,6 @@
 
 #include <string.h>
 
-#ifdef __ARCH_X86_64__
-#include <arch/x86_64/def.h>
-#endif
-
 #include <mm/pmm/pmm.h>
 #include <misc/helpers.h>
 #include <misc/debug.h>
@@ -33,9 +29,8 @@ void pmm_init(void)
                 size_t num_free_pages = (8 * (num_pages * 4096 - 4095) - 7) / (4096 * 8 + 1) + 1;
                 size_t bitmap_size = (num_pages + 7) / 8;
                 
-                pmm_area_t *area = paddr_ptr(base);
+                pmm_area_t *area = (void*)(to_vaddr(base));
                
-
                 area->free_idx_hint = 0;
                 area->bitmap.size = num_free_pages;
                 area->num_pages = num_free_pages;

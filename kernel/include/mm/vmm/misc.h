@@ -1,4 +1,3 @@
-#include "arch/x86_64/def.h"
 #include <mm/vmm/vmm.h>
 
 // static inline vmm_area_t* vmm_size_tree_area(avlnode_t *node)

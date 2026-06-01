@@ -1,4 +1,3 @@
-#include "arch/x86_64/def.h"
 #include "arch/x86_64/ints/pic.h"
 #include "arch/x86_64/pit.h"
 #include <kernel.h>

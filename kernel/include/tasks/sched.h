@@ -1,11 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-
-#ifdef __ARCH_X86_64__
-#include <arch/x86_64/def.h>
-#endif
-
 #include <vendor/list.h>
 
 #define TASK_NAME_MAX_LEN   64

@@ -1,7 +1,7 @@
 #pragma once
 
+#include <kernel.h>
 #include <stdint.h>
-#include <arch/x86_64/def.h>
 
 typedef enum page_flags_t
 {
@@ -14,6 +14,7 @@ typedef enum page_flags_t
     PAGE_FLAG_DIRTY             = 1 << 6,
     PAGE_FLAG_PAT               = 1 << 7,
     PAGE_FLAG_GLOBAL            = 1 << 8,
+    PAGE_FLAG_COW               = 1 << 9,
 } page_flags_t;
 
 typedef uint64_t page_entry_t;

@@ -2,7 +2,6 @@
 #include <stdbool.h>
 
 #ifdef __ARCH_X86_64__
-#include <arch/x86_64/def.h>
 #include <arch/x86_64/ints/pic.h>
 #endif
 

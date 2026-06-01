@@ -4,11 +4,6 @@
 #include <stdint.h>
 #include <string.h>
 
-
-#ifdef __ARCH_X86_64__
-#include <arch/x86_64/def.h>
-#endif
-
 #include <firmware/acpi/acpi.h>
 #include <firmware/acpi/fadt.h>
 #include <firmware/acpi/madt.h>
@@ -23,8 +18,6 @@
 #define ENTRY_TYPE_LAPIC_NMI                4
 #define ENTRY_TYPE_LAPIC_ADDR_OVERRIDE      5
 #define ENTRY_TYPE_PROCESSOR_LOCAL_2XAPIC   9
-
-
 
 static rsdp_t *rsdp = NULL;
 static xsdp_t *xsdp = NULL;
@@ -88,6 +81,8 @@ void acpi_init(void)
     rsdp = acpi_get_rsdp(); 
     xsdp = acpi_get_rsdp();
     
+    
+
     acpi_sdt_header *fadt_header = acpi_find_sdt("FACP");
     if (fadt_header)
     {

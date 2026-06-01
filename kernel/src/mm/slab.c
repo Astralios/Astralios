@@ -7,10 +7,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef __ARCH_X86_64__
-#include <arch/x86_64/def.h>
-#endif
-
 #define slab_bufctl(slab)   ((uint32_t*)(slab + 1))
 #define slab_mem(cache)     ((cache)->obj_size * (cache)->obj_per_slab + sizeof(slab_t) + sizeof(uint32_t))
 

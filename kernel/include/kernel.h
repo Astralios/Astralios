@@ -3,6 +3,13 @@
 #include <bootstub.h>
 #include <stdint.h>
 
+#define PAGE_SIZE 4096
+
+#define to_vaddr(paddr) (vaddr_t)((paddr) + krnl_ctx.bootloader_ctx->hhdm)
+#define to_paddr(vaddr) ((paddr_t)((vaddr) - krnl_ctx.bootloader_ctx->hhdm))
+
+#define paddr_ptr(paddr) (void*)(to_vaddr((paddr)))
+
 typedef struct page_table_t page_table_t;
 typedef struct vmm_t vmm_t;
 
@@ -24,5 +31,8 @@ typedef struct krnl_ctx_t
 } krnl_ctx_t;
 
 extern krnl_ctx_t krnl_ctx;
+
+typedef uintptr_t vaddr_t;
+typedef uintptr_t paddr_t;
 
 

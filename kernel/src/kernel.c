@@ -37,7 +37,6 @@
 #include <misc/arrlen.h>
 
 #ifdef __ARCH_X86_64__
-#include <arch/x86_64/def.h>
 #include <arch/x86_64/mm/paging.h>
 #include <arch/x86_64/cpu/cpu.h>
 #include <arch/x86_64/desc/gdt.h>

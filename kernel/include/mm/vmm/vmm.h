@@ -51,7 +51,6 @@
 #include "vendor/list.h"
 #include <stddef.h>
 #ifdef __ARCH_X86_64__
-#include "arch/x86_64/def.h"
 #include "arch/x86_64/mm/paging.h"
 #endif
 

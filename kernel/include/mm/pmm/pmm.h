@@ -1,11 +1,7 @@
 #pragma once
+#include <kernel.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#ifdef __ARCH_X86_64__
-#include <arch/x86_64/def.h>
-#endif
-
 #include <vendor/bitmap.h>
 
 extern size_t pmm_free_num_pages;

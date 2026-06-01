@@ -1,7 +1,6 @@
 #pragma once
 
-#include <bootstub.h>
-#include <arch/x86_64/def.h>
+#include <kernel.h>
 #include <stdint.h>
 #include <vendor/list.h>
 
