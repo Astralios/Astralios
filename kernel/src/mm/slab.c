@@ -6,13 +6,10 @@
 
 #define SLAB_MEM(cache) (cache->obj_size * cache->num_objs_per_slab + sizeof(slab_t))
 
-// TODO: Maybe tweak with alignment
-// TODO: This will corrupt memory if obj_size < 2 * sizeof(uintptr_t)
-cache_t *cache_create(const char *name, size_t obj_size)
+cache_t *caches_cache = NULL;
+
+static void cache_init(cache_t *cache, const char *name, size_t obj_size)
 {
-    // TODO: Don't use vmalloc
-    cache_t *cache = vmalloc(sizeof(cache_t));
-    
     list_init(&cache->list);
     list_init(&cache->slabs_free);
     list_init(&cache->slabs_partial);
@@ -25,7 +22,21 @@ cache_t *cache_create(const char *name, size_t obj_size)
     cache->total_num_objs = 0;
     cache->total_num_slabs = 0;
     cache->name = name;
+}
 
+void caches_cache_init(void)
+{
+    caches_cache = vmalloc(sizeof(cache_t));
+    cache_init(caches_cache, "caches cache", sizeof(cache_t));
+}
+
+
+// TODO: Maybe tweak with alignment
+// TODO: This will corrupt memory if obj_size < 2 * sizeof(uintptr_t)
+cache_t *cache_create(const char *name, size_t obj_size)
+{
+    cache_t *cache = cache_alloc(caches_cache);
+    cache_init(cache, name, obj_size);
     return cache;
 }
 
