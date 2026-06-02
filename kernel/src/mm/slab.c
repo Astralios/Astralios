@@ -168,4 +168,25 @@ void cache_free(cache_t *cache, void *ptr)
     }
 }
 
+bool cache_shrink(cache_t *cache)
+{    
+    slab_t *slab = get_slab(&cache->slabs_free);
+    if (!slab) 
+        return false;
+
+    list_remove(&slab->list);
+    
+    vfree(slab->smem);
+
+    if (cache == slabs_cache)
+        vfree(slab);
+    else
+        cache_free(slabs_cache, slab);
+
+    cache->total_num_slabs--;
+    cache->total_num_objs -= cache->num_objs_per_slab;
+
+    return true;
+}
+
 

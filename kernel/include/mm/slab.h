@@ -38,6 +38,7 @@ typedef struct
 void     slab_allocator_init(void);
 cache_t* cache_create(const char *name, size_t obj_size);
 bool     cache_grow(cache_t *cache);
+bool     cache_shrink(cache_t *cache);
 void*    cache_alloc(cache_t *cache);
 void     cache_free(cache_t *cache, void *ptr);
 
