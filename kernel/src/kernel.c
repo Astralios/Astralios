@@ -430,7 +430,15 @@ void kmain(bootloader_ctx_t *ctx)
         uintptr_t two;
         uintptr_t three;
     };
+    
+    slab_allocator_init();
+    cache_t *cache = cache_create("sth", sizeof(struct foo));
+    struct foo* myfoo = cache_alloc(cache);
+    struct foo* myfoo1 = cache_alloc(cache); 
+    debug("one");
+    debug("%d", (uintptr_t)myfoo1 - (uintptr_t)myfoo);
 
+    //
     //scheduler_init(); 
     //task_t *task_a = task_create(task_a_entry);
     //task_t *task_b = task_create(task_b_entry);

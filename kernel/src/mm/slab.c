@@ -6,7 +6,8 @@
 
 #define SLAB_MEM(cache) (cache->obj_size * cache->num_objs_per_slab + sizeof(slab_t))
 
-cache_t *caches_cache = NULL;
+static cache_t *caches_cache = NULL;
+static cache_t *slabs_cache = NULL;
 
 static void cache_init(cache_t *cache, const char *name, size_t obj_size)
 {
@@ -24,12 +25,14 @@ static void cache_init(cache_t *cache, const char *name, size_t obj_size)
     cache->name = name;
 }
 
-void caches_cache_init(void)
+void slab_allocator_init(void)
 {
     caches_cache = vmalloc(sizeof(cache_t));
     cache_init(caches_cache, "caches cache", sizeof(cache_t));
-}
 
+    slabs_cache = vmalloc(sizeof(cache_t));
+    cache_init(slabs_cache, "slabs cache", sizeof(slab_t));
+}
 
 // TODO: Maybe tweak with alignment
 // TODO: This will corrupt memory if obj_size < 2 * sizeof(uintptr_t)
@@ -42,8 +45,14 @@ cache_t *cache_create(const char *name, size_t obj_size)
 
 bool cache_grow(cache_t *cache)
 {
-    // TODO: Don't use vmalloc
-    slab_t *slab = vmalloc(SLAB_MEM(cache));
+    slab_t *slab = NULL;
+    
+    if (cache == slabs_cache) {
+        slab = vmalloc(sizeof(slab_t));    
+    } else {
+        slab = cache_alloc(slabs_cache);
+    }
+
     if (!slab)
     {
         return false;
@@ -54,7 +63,7 @@ bool cache_grow(cache_t *cache)
     
     slab->num_objs_inuse = 0;
     slab->cache = cache;
-    slab->smem = (void*)((vaddr_t)slab + sizeof(slab_t));
+    slab->smem = vmalloc(cache->num_objs_per_slab * cache->obj_size);
     
     for (size_t i = 0; i < cache->num_objs_per_slab; ++i)
     {
