@@ -28,13 +28,15 @@ typedef struct
 typedef struct
 {
     list_t list;
-    
+    cache_t *cache;
+
     size_t num_objs_inuse;
     void *smem;
     // TODO: prev pointer is not needed
     list_t freelist;
 } slab_t;
 
-cache_t *cache_create(const char *name, size_t obj_size);
+cache_t* cache_create(const char *name, size_t obj_size);
+bool     cache_grow(cache_t *cache);
 
 
