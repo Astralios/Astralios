@@ -53,7 +53,50 @@ bool cache_grow(cache_t *cache)
 
     list_append(&cache->slabs_free, &slab->list);
 
+    cache->total_num_slabs++;
+    cache->total_num_objs += cache->num_objs_per_slab;
+
     return true;
+}
+
+static inline slab_t *get_slab(list_t *list)
+{
+    return (slab_t*)list_next(list);
+}
+
+static slab_t *slab_select(cache_t *cache)
+{
+    slab_t *slab = NULL;
+
+    if ((slab = get_slab(&cache->slabs_partial)))
+        return slab;
+
+    if ((slab = get_slab(&cache->slabs_free)))
+        return slab;  
+
+    if (!cache_grow(cache))
+        return slab;
+    
+    slab = get_slab(&cache->slabs_free);
+    return slab;
+}
+
+static inline void* get_obj(slab_t *slab)
+{
+    return (void*)list_next(&slab->freelist);
+}
+
+void* cache_alloc(cache_t *cache)
+{
+    slab_t *slab = slab_select(cache);
+    if (!slab)
+        return NULL;
+
+    void *obj = get_obj(slab);     
+    list_remove(obj);
+    slab->num_objs_inuse++;
+        
+    return obj;
 }
 
 
