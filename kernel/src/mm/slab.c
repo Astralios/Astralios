@@ -51,7 +51,10 @@ bool cache_grow(cache_t *cache)
         list_append(&slab->freelist, list);
     }
 
+    list_append(&cache->slabs_free, &slab->list);
+
     return true;
 }
+
 
 
