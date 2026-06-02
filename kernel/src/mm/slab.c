@@ -94,10 +94,59 @@ void* cache_alloc(cache_t *cache)
 
     void *obj = get_obj(slab);     
     list_remove(obj);
+
     slab->num_objs_inuse++;
+
+    list_remove(&slab->list);
+    if (slab->num_objs_inuse == cache->num_objs_per_slab)
+        list_append(&cache->slabs_full, &slab->list);
+    else
+        list_append(&cache->slabs_partial, &slab->list);
         
     return obj;
 }
 
+static bool cache_free_within(cache_t *cache, slab_t *slab, void *ptr)
+{
+    foreach (node, slab->list.prev)
+    {
+        slab_t *curr = (slab_t*)node;
+        
+        if (curr->smem <= ptr && ptr < curr->smem + cache->num_objs_per_slab * cache->obj_size)
+        {
+            if (--curr->num_objs_inuse == 0)
+            {
+                list_remove(&curr->list);
+                list_append(&cache->slabs_free, &curr->list);
+            } else {
+                list_remove(&curr->list);
+                list_append(&cache->slabs_partial, &curr->list);
+            }
+
+            list_append(&curr->freelist, node);
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void cache_free(cache_t *cache, void *ptr)
+{
+    slab_t *slab = get_slab(&cache->slabs_full);
+    if (slab)
+    {
+        if (cache_free_within(cache, slab, ptr))
+            return;
+    }
+
+    slab = get_slab(&cache->slabs_partial);
+    if (slab)
+    {
+        if (cache_free_within(cache, slab, ptr))
+            return;
+    }
+}
 
 

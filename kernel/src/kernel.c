@@ -23,6 +23,7 @@
 
 #include <mm/pmm/pmm.h>
 #include <mm/vmm/vmm.h>
+#include <mm/slab.h>
 
 #include <devs/serial.h>
 
@@ -424,11 +425,17 @@ void kmain(bootloader_ctx_t *ctx)
     // vfs_lookup(&cursor, &cursor_inode);
     // load_bmp(cursor_inode);
 
-    scheduler_init(); 
-    task_t *task_a = task_create(task_a_entry);
-    task_t *task_b = task_create(task_b_entry);
-    scheduler_schedule(task_a);
-    scheduler_schedule(task_b);
+    struct foo {
+        uintptr_t one;
+        uintptr_t two;
+        uintptr_t three;
+    };
+
+    //scheduler_init(); 
+    //task_t *task_a = task_create(task_a_entry);
+    //task_t *task_b = task_create(task_b_entry);
+    //scheduler_schedule(task_a);
+    ///scheduler_schedule(task_b);
 
     hcf();
 }
