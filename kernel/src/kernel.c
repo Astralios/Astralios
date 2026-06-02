@@ -306,7 +306,6 @@ void redner()
             }
         }
 
-
         angle += dt * HALF_PI;
         clear(surface, 0);
         model3d_render(surface, &model);
