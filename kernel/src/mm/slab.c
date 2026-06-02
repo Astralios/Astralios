@@ -4,8 +4,6 @@
 #include <vendor/list.h>
 #include <mm/slab.h>
 
-#define SLAB_MEM(cache) (cache->obj_size * cache->num_objs_per_slab + sizeof(slab_t))
-
 static cache_t *caches_cache = NULL;
 static cache_t *slabs_cache = NULL;
 
@@ -40,7 +38,7 @@ cache_t *cache_create(const char *name, size_t obj_size)
 {
     cache_t *cache = cache_alloc(caches_cache);
     cache_init(cache, name, obj_size);
-    return cache;
+return cache;
 }
 
 bool cache_grow(cache_t *cache)
@@ -143,6 +141,7 @@ static bool cache_free_within(cache_t *cache, slab_t *slab, void *ptr)
                 list_append(&cache->slabs_partial, &curr->list);
             }
 
+            
             list_append(&curr->freelist, node);
 
             return true;
