@@ -3,6 +3,7 @@
 
 #include "bootstub.h"
 #include "fb.h"
+#include "modules.h"
 #include "string.h"
 
 #define LIMINE_API_REVISION 4
@@ -124,9 +125,9 @@ static void get_fbs(fb_t **buf)
             fbs[i].blue_mask_shift = fb->blue_mask_shift;
             fbs[i].red_mask_shift = fb->red_mask_shift;
             fbs[i].green_mask_shift = fb->green_mask_shift;
-            fbs[i].red_mask_size = fb->blue_mask_size;
+            fbs[i].red_mask_size = fb->red_mask_size;
             fbs[i].blue_mask_size = fb->blue_mask_size;
-            fbs[i].green_mask_size = fb->blue_mask_size;
+            fbs[i].green_mask_size = fb->green_mask_size;
         }
     }
 }
@@ -137,25 +138,23 @@ static inline uint64_t get_modules_count(void)
     return 0;
 }
 
-static module_t from_limine_file(struct limine_file *file)
-{
-    module_t module = {0};
-    module.addr = file->address;
-    module.path = file->path;
-    module.size = file->size;
-    return module;
-}
-
 static void get_modules(modules_t *modules)
 {
     uint64_t modules_count = get_modules_count();
-    if (modules_count == 0) return;
+    if (modules_count == 0) 
+        return;
+    
     modules->num_modules = modules_count;
     modules->modules = (module_t*)heap_alloc(sizeof(module_t) * modules_count);
 
     for (size_t i = 0; i < modules_count; i++)
     {
-        modules->modules[i] = from_limine_file(module_request.response->modules[i]);
+        struct limine_file *file = module_request.response->modules[i];
+        modules->modules[i] = (module_t) {
+            .addr = file->address,
+            .path = file->path,
+            .size = file->size,
+        };
     }
 }
 
@@ -168,6 +167,7 @@ static void get_rsdp(acpi_rsdp_t *rsdp)
         rsdp->revision = res->revision;
     }
 }
+
 static void load_bootloader_ctx(void)
 {
     get_krnl_map(&bootloader_ctx.krnl_map);
@@ -175,6 +175,7 @@ static void load_bootloader_ctx(void)
     get_fbs(&bootloader_ctx.fbs);
     get_rsdp(&bootloader_ctx.acpi_rsdp);
     get_modules(&bootloader_ctx.modules);
+    
     bootloader_ctx.hhdm = hhdm_request.response->offset;
 }
 
@@ -184,3 +185,4 @@ void kstart(void)
     load_bootloader_ctx();
     kmain(&bootloader_ctx);
 }
+

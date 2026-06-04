@@ -1,6 +1,7 @@
 #pragma once
 
-#include "fb.h"
+#include <fb.h>
+#include <modules.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -37,19 +38,6 @@ typedef struct krnl_map_t
     uint64_t physical_base;
     uint64_t virtual_base;
 } krnl_map_t;
-
-typedef struct module_t
-{
-    void*    addr;
-    uint64_t size;
-    char*    path;
-} module_t;
-
-typedef struct modules_t
-{
-    uint64_t  num_modules;
-    module_t* modules;
-} modules_t;
 
 typedef struct acpi_rsdp_t
 {

@@ -127,7 +127,7 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     case PIT_INT:
     {
     
-        krnl_ctx.interrupt_controller->send_eoi(iframe->vector_number);
+        krnlctx(interrupt_controller)->send_eoi(iframe->vector_number);
         timer_callback();
         scheduler_switch();
         break;
@@ -145,5 +145,5 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     }
     }
 
-    krnl_ctx.interrupt_controller->send_eoi(iframe->vector_number);
+    krnlctx(interrupt_controller)->send_eoi(iframe->vector_number);
 }

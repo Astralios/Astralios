@@ -11,7 +11,7 @@ extern vaddr_t hhdm_end;
 
 void vheap_init(void)
 {
-    vmm_init(&vheap, krnl_ctx.pt, hhdm_end, (32 * 1024 * 1024 * 1024l) / PAGE_SIZE);
+    vmm_init(&vheap, krnlctx(pt), hhdm_end, (32 * 1024 * 1024 * 1024l) / PAGE_SIZE);
 }
 
 void *vmalloc_pf(size_t size, page_flags_t flags)

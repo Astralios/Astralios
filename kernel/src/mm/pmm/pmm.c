@@ -13,7 +13,7 @@ size_t pmm_free_num_pages = 0;
 
 void pmm_init(void)
 {
-    memmap_t memmap = krnl_ctx.bootloader_ctx->memmap;
+    memmap_t memmap = bootctx(memmap);
     for (size_t i = 0; i < memmap.num_entries; ++i)
     {
         memmap_entry_t entry = memmap.entries[i];

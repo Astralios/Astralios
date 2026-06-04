@@ -10,6 +10,9 @@
 
 #define paddr_ptr(paddr) (void*)(to_vaddr((paddr)))
 
+#define krnlctx(v) krnl_ctx.v
+#define bootctx(v) krnlctx(bootloader_ctx)->v
+
 typedef struct page_table_t page_table_t;
 typedef struct vmm_t vmm_t;
 

@@ -21,7 +21,7 @@ ringbuf_t key_ringbuf;
 void ps2_keyboard_init(void)
 {
     current_scancode_set = ps2_keyboard_get_scancode_set(); 
-    krnl_ctx.interrupt_controller->clear_mask(1);
+    krnlctx(interrupt_controller)->clear_mask(1);
     info(ps2_keyboard_init, "Initalized!");
     ringbuf_init(&key_ringbuf, 256, sizeof(kbd_ev_t), RINGBUF_MODE_OVERWRITE, vmalloc);
 }

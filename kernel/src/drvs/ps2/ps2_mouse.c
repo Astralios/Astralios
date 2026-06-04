@@ -18,7 +18,7 @@ void ps2_mouse_init(void)
 
     if (ps2_readData() != PS2_RES_ACK) return;
 
-    krnl_ctx.interrupt_controller->clear_mask(12);
+    krnlctx(interrupt_controller)->clear_mask(12);
     info(ps2_mouse_init, "Initalized!");
 }
 

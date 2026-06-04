@@ -27,7 +27,7 @@ static bool do_checksum(acpi_sdt_header *header)
 
 static inline void* acpi_get_rsdp(void)
 {
-    return (void*)krnl_ctx.bootloader_ctx->acpi_rsdp.addr;
+    return (void*)bootctx(acpi_rsdp).addr;
 }
 
 acpi_sdt_header *acpi_find_sdt(const char signature[4])

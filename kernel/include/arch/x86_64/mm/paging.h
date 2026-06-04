@@ -24,11 +24,11 @@ typedef struct page_table_t {
 
 #define PAGE_PHYSICAL_ADDRESS_MASK  0xfffffffff000
 
-void map_to_pt(page_table_t *pt, paddr_t paddr, vaddr_t vaddr, page_flags_t flags);
-void unmap_from_pt(page_table_t *pt, vaddr_t vaddr);
-void map_prange_to_pt(page_table_t *pt, paddr_t from, paddr_t to, vaddr_t at, page_flags_t flags);
-void unmap_range_from_pt(page_table_t *pt, vaddr_t from, vaddr_t to);
-void map_vrange_to_pt(page_table_t *pt, vaddr_t from, vaddr_t to, paddr_t at, page_flags_t flags);
-void map_kernel_to_pt(page_table_t *pt);
-void map_memmap_to_pt(page_table_t *pt);
+void          pt_unmap(page_table_t *pt, vaddr_t vaddr);
+void          pt_map(page_table_t *pt, paddr_t paddr, vaddr_t vaddr, page_flags_t flags);
+page_table_t *pt_create(void);
+void          pt_swap(page_table_t *pt);
+void          pt_map_kernel(page_table_t *pt);
+void          pt_map_memmap(page_table_t *pt);
+
 

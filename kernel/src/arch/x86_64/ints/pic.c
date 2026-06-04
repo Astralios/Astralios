@@ -31,7 +31,7 @@ void pic_init() {
     outb(PIC1_DATA, 0b11111111);
     outb(PIC2_DATA, 0b11111111);
 
-    krnl_ctx.interrupt_controller = &pic;
+    krnlctx(interrupt_controller) = &pic;
     info(pic_init, "Initalized!");
 }
 

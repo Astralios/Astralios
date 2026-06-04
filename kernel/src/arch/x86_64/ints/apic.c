@@ -17,7 +17,6 @@
 
 static const int_ctrl_t apic;
 
-extern page_table_t *root_pt;
 extern volatile uint64_t lapic_addr;
 extern volatile uint64_t ioapic_addr;
 extern volatile uint64_t ioapic_gsi_base;
@@ -177,10 +176,10 @@ void apic_init(void)
     msr_set(APIC_BASE_MSR, apic_msr);    
 
     lapic = (uint32_t*)to_vaddr(lapic_addr);
-    map_to_pt(root_pt, lapic_addr, (vaddr_t)lapic, PAGE_FLAG_READ_WRITE | PAGE_FLAG_PRESENT);
+    pt_map(krnlctx(pt), lapic_addr, (vaddr_t)lapic, PAGE_FLAG_READ_WRITE | PAGE_FLAG_PRESENT);
 
     ioapic = (uint32_t*)to_vaddr(ioapic_addr);
-    map_to_pt(root_pt, ioapic_addr, (vaddr_t)ioapic, PAGE_FLAG_READ_WRITE | PAGE_FLAG_PRESENT);
+    pt_map(krnlctx(pt), ioapic_addr, (vaddr_t)ioapic, PAGE_FLAG_READ_WRITE | PAGE_FLAG_PRESENT);
 
     apic_timer_init();
     pic_disable();
@@ -189,7 +188,7 @@ void apic_init(void)
     ioapic_register(12, 0x2C, get_lapic_id());
     ioapic_register(4, 0x30, get_lapic_id());
 
-    krnl_ctx.interrupt_controller = &apic;
+    krnlctx(interrupt_controller) = &apic;
     info(apic_init, "Initalized!");
 }
 

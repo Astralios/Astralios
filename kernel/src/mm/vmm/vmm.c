@@ -49,7 +49,7 @@ static void vmm_map_area(vmm_t *vmm, vmm_area_t *area)
 {
     for (size_t i = 0; i < area->num_pages; ++i)
     {
-        map_to_pt(vmm->pt, pmm_palloc(1), area->addr + i * PAGE_SIZE, area->page_flags | PAGE_FLAG_PRESENT);
+        pt_map(vmm->pt, pmm_palloc(1), area->addr + i * PAGE_SIZE, area->page_flags | PAGE_FLAG_PRESENT);
     }
 }
 
@@ -89,7 +89,7 @@ vaddr_t vmm_palloc(vmm_t *vmm, size_t num_pages, page_flags_t page_flags)
 static void vmm_unmap_area(vmm_t *vmm, vmm_area_t *area)
 {
   for (size_t i = 0; i < area->num_pages; ++i) {
-    unmap_from_pt(vmm->pt, area->addr + i * PAGE_SIZE);
+    pt_unmap(vmm->pt, area->addr + i * PAGE_SIZE);
     invplg(area->addr + i * PAGE_SIZE);
   }
 }
