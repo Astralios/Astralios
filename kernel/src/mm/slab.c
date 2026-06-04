@@ -186,3 +186,7 @@ bool cache_shrink(cache_t *cache)
     return true;
 }
 
+list_t *cache_chain(void)
+{
+    return &caches_cache->list;
+}

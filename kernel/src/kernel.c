@@ -8,6 +8,7 @@
 #include "mm/vheap.h"
 #include "tasks/sched.h"
 #include "terminal/fbtty.h"
+#include "vendor/list.h"
 #include "vendor/spinlock.h"
 #include <kernel.h>
 
@@ -437,6 +438,12 @@ void kmain(bootloader_ctx_t *ctx)
     struct foo* myfoo1 = cache_alloc(cache); 
     debug("one");
     debug("%d", (uintptr_t)myfoo1 - (uintptr_t)myfoo);
+
+    foreach(node, cache_chain())
+    {
+        cache_t *c = (cache_t*)node;
+        debug("%s", c->name);
+    }
 
     //
     //scheduler_init(); 

@@ -93,31 +93,23 @@ void acpi_init(void)
         while (curr < end)
         {
             madt_entry_t *entry = (madt_entry_t*)curr;
-            switch (entry_header->entry_type) {
-            case ENTRY_TYPE_IO_APIC:
+            switch (entry->entry_type) {
+            case MADT_ENTRY_TYPE_IO_APIC:
             {
-                madt_ioapic_t *entry = (madt_ioapic_t*)entry_header;
-                ioapic_addr = entry->io_apic_addr;
-                ioapic_gsi_base = entry->global_system_interrupt_base;
+                ioapic_addr = entry->ioapic.ioapic_addr;
+                ioapic_gsi_base = entry->ioapic.gsi_base;
                 break;
             }
-            case ENTRY_TYPE_IO_APIC_ISO:
+            case MADT_ENTRY_TYPE_LAPIC_ADDR_OVERRIDE:
             {
-                madt_ioapic_iso_t *entry = (madt_ioapic_iso_t*)entry_header;
-                // TODO: Finish
-                break; 
-            }
-            case ENTRY_TYPE_LAPIC_ADDR_OVERRIDE:
-            {
-                madt_lapic_addr_override_t *entry = (madt_lapic_addr_override_t*)entry_header;
-                lapic_addr = entry->lapic_addr;
+                lapic_addr = entry->lapic_addr_override.lapic_addr;
                 break;   
             }
             default:
                 break;  
             }
 
-            curr += entry_header->record_len;
+            curr += entry->record_len;
         }
     }
 

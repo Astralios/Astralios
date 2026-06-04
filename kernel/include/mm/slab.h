@@ -41,4 +41,5 @@ bool     cache_grow(cache_t *cache);
 bool     cache_shrink(cache_t *cache);
 void*    cache_alloc(cache_t *cache);
 void     cache_free(cache_t *cache, void *ptr);
+list_t * cache_chain(void);
 
