@@ -23,7 +23,7 @@ static void cache_init(cache_t *cache, const char *name, size_t obj_size)
     cache->name = name;
 }
 
-void slab_allocator_init(void)
+void slab_init(void)
 {
     caches_cache = vmalloc(sizeof(cache_t));
     cache_init(caches_cache, "caches cache", sizeof(cache_t));

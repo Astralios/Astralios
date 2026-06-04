@@ -35,7 +35,7 @@ typedef struct
     list_t freelist;
 } slab_t;
 
-void     slab_allocator_init(void);
+void     slab_init(void);
 cache_t* cache_create(const char *name, size_t obj_size);
 bool     cache_grow(cache_t *cache);
 bool     cache_shrink(cache_t *cache);

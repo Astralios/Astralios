@@ -8,8 +8,6 @@
 #include "mm/vheap.h"
 #include "tasks/sched.h"
 #include "terminal/fbtty.h"
-#include "vendor/list.h"
-#include "vendor/spinlock.h"
 #include <kernel.h>
 
 #include <string.h>
@@ -403,10 +401,7 @@ void kmain(bootloader_ctx_t *ctx)
     
     ps2_mouse_init();
 
-    fpu_enable();
-    sse_enable();
-    
-    slab_allocator_init();
+    slab_init();
     vfs_init();
     fs_mount(&tmpfs, &vfs_root);
     
