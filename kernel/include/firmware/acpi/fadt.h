@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "acpi.h"
+#include <firmware/acpi/acpi.h>
 
 typedef struct GenericAddressStructure
 {

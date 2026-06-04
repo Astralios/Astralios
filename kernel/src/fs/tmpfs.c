@@ -1,3 +1,4 @@
+#include "mm/slab.h"
 #include "mm/vheap.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -29,6 +30,8 @@ typedef struct tmpfs_inode_t {
     size_t cap;
     tmpfs_data_t *data;
 } tmpfs_inode_t;
+
+cache_t *tmpfs_inode_cache = NULL;
 
 inode_t *tmpfs_inode_create(inode_kind_t kind, const inode_ops_t *ops)
 {

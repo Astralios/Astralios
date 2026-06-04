@@ -11,14 +11,6 @@
 
 #define ACPI_VERSION_2 2
 
-#define ENTRY_TYPE_PROCESSOR_LAPIC          0
-#define ENTRY_TYPE_IO_APIC                  1
-#define ENTRY_TYPE_IO_APIC_ISO              2
-#define ENTRY_TYPE_IO_APIC_NMI_SRC          3
-#define ENTRY_TYPE_LAPIC_NMI                4
-#define ENTRY_TYPE_LAPIC_ADDR_OVERRIDE      5
-#define ENTRY_TYPE_PROCESSOR_LOCAL_2XAPIC   9
-
 static rsdp_t *rsdp = NULL;
 static xsdp_t *xsdp = NULL;
 
@@ -100,7 +92,7 @@ void acpi_init(void)
         char *end  = (char*)madt + madt->header.length;
         while (curr < end)
         {
-            madt_entry_header_t *entry_header = (madt_entry_header_t*)curr; 
+            madt_entry_t *entry = (madt_entry_t*)curr;
             switch (entry_header->entry_type) {
             case ENTRY_TYPE_IO_APIC:
             {

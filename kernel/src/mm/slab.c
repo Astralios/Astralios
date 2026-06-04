@@ -38,7 +38,9 @@ cache_t *cache_create(const char *name, size_t obj_size)
 {
     cache_t *cache = cache_alloc(caches_cache);
     cache_init(cache, name, obj_size);
-return cache;
+    list_append(&caches_cache->list, &cache->list);
+
+    return cache;
 }
 
 bool cache_grow(cache_t *cache)
@@ -140,7 +142,6 @@ static bool cache_free_within(cache_t *cache, slab_t *slab, void *ptr)
                 list_remove(&curr->list);
                 list_append(&cache->slabs_partial, &curr->list);
             }
-
             
             list_append(&curr->freelist, node);
 
@@ -155,17 +156,13 @@ void cache_free(cache_t *cache, void *ptr)
 {
     slab_t *slab = get_slab(&cache->slabs_full);
     if (slab)
-    {
         if (cache_free_within(cache, slab, ptr))
             return;
-    }
 
     slab = get_slab(&cache->slabs_partial);
     if (slab)
-    {
         if (cache_free_within(cache, slab, ptr))
             return;
-    }
 }
 
 bool cache_shrink(cache_t *cache)
@@ -188,5 +185,4 @@ bool cache_shrink(cache_t *cache)
 
     return true;
 }
-
 
