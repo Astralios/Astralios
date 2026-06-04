@@ -1,6 +1,7 @@
 #pragma once
 
-#include "misc/strview.h"
+#include <mm/slab.h>
+#include <misc/strview.h>
 #include <stddef.h>
 
 typedef struct path_t path_t;
@@ -42,6 +43,7 @@ typedef struct path_t {
 } path_t;
 
 extern inode_t *vfs_root;
+extern cache_t* inode_cache;
 
 long        inode_read  (inode_t *inode, void *buf, size_t count, size_t offset);
 long        inode_write (inode_t *inode, const void *buf, size_t count, size_t offset);
@@ -55,5 +57,4 @@ int         vfs_create(const path_t *path, inode_kind_t kind, inode_t **ret);
 int         vfs_lookup(const path_t *path, inode_t **ret);
 int         vfs_mount(const fs_t *fs, const path_t *path);
 
-
-
+void        vfs_init(void);

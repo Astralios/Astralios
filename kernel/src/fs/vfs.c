@@ -8,8 +8,7 @@
 #include <misc/strview.h>
 
 inode_t *vfs_root = NULL;
-
-cache_t *inode_cache = NULL;
+cache_t* inode_cache = NULL;
 
 long inode_read(inode_t *inode, void *buf, size_t count, size_t offset)
 {
@@ -123,5 +122,5 @@ int vfs_mount(const fs_t *fs, const path_t *path)
 void vfs_init(void)
 {
     inode_cache = cache_create("inode cache", sizeof(inode_t));
-    
 }
+

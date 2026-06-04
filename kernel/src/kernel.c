@@ -406,6 +406,8 @@ void kmain(bootloader_ctx_t *ctx)
     fpu_enable();
     sse_enable();
     
+    slab_allocator_init();
+    vfs_init();
     fs_mount(&tmpfs, &vfs_root);
     
     path_t initrd = vfs_path_from_abs("/initrd");
@@ -418,39 +420,11 @@ void kmain(bootloader_ctx_t *ctx)
     inode_t *hello_inode = NULL;
     vfs_lookup(&hello, &hello_inode);
 
-    char read_buf[256] = {0};
-    inode_read(hello_inode, read_buf, 32, 0);
-
-    // path_t cursor = vfs_path_from_abs("/initrd/cursorius.bmp");
-    // inode_t *cursor_inode = NULL;
-    // vfs_lookup(&cursor, &cursor_inode);
-    // load_bmp(cursor_inode);
-
-    struct foo {
-        uintptr_t one;
-        uintptr_t two;
-        uintptr_t three;
-    };
-    
-    slab_allocator_init();
-    cache_t *cache = cache_create("sth", sizeof(struct foo));
-    struct foo* myfoo = cache_alloc(cache);
-    struct foo* myfoo1 = cache_alloc(cache); 
-    debug("one");
-    debug("%d", (uintptr_t)myfoo1 - (uintptr_t)myfoo);
-
-    foreach(node, cache_chain())
-    {
-        cache_t *c = (cache_t*)node;
-        debug("%s", c->name);
-    }
-
-    //
-    //scheduler_init(); 
-    //task_t *task_a = task_create(task_a_entry);
-    //task_t *task_b = task_create(task_b_entry);
-    //scheduler_schedule(task_a);
-    ///scheduler_schedule(task_b);
+    scheduler_init(); 
+    task_t *task_a = task_create(task_a_entry);
+    task_t *task_b = task_create(task_b_entry);
+    scheduler_schedule(task_a);
+    scheduler_schedule(task_b);
 
     hcf();
 }

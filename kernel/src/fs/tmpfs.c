@@ -31,11 +31,9 @@ typedef struct tmpfs_inode_t {
     tmpfs_data_t *data;
 } tmpfs_inode_t;
 
-cache_t *tmpfs_inode_cache = NULL;
-
 inode_t *tmpfs_inode_create(inode_kind_t kind, const inode_ops_t *ops)
 {
-    inode_t *inode = vmalloc(sizeof(inode_t));
+    inode_t *inode = cache_alloc(inode_cache);
     if (inode)
     {
         tmpfs_inode_t *tmpfs_inode = vmalloc(sizeof(inode_t));
@@ -47,7 +45,7 @@ inode_t *tmpfs_inode_create(inode_kind_t kind, const inode_ops_t *ops)
             tmpfs_inode->cap = 0;
             tmpfs_inode->data = NULL;
         } else {
-            vfree(inode);
+            cache_free(inode_cache, inode);
             return NULL;
         }
     }
