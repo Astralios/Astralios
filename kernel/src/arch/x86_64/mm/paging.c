@@ -64,6 +64,14 @@ extern char mut_data_end[];
 
 vaddr_t hhdm_end = 0;
 
+void pt_join_kernel(page_table_t *user_pt, page_table_t *kernel_pt)
+{
+    for (int i = 256; i < 512; ++i)
+    {
+        user_pt->entries[i] = kernel_pt->entries[i];
+    }
+}
+
 void pt_map_kernel(page_table_t *pt)
 {
     map_kernel_sections_to_pt(pt, (vaddr_t)text_start, (vaddr_t)text_end, PAGE_FLAG_PRESENT);

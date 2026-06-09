@@ -30,5 +30,6 @@ page_table_t *pt_create(void);
 void          pt_swap(page_table_t *pt);
 void          pt_map_kernel(page_table_t *pt);
 void          pt_map_memmap(page_table_t *pt);
+void          pt_join_kernel(page_table_t *user_pt, page_table_t *kernel_pt);
 
 
