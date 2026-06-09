@@ -8,6 +8,8 @@ BIN_NAME     	:= astralisos
 LIBC_FOLDER  	:= libc
 EXTERNAL_FOLDER	:= external
 BOOTSTUB_FOLDER := bootstub
+SCRIPTS_FOLDER  := .scripts
+
 ISO_ROOT     	:= $(BUILD_FOLDER)/iso_root
 OBJS_FOLDER  	:= $(BUILD_FOLDER)/objs
 
@@ -39,7 +41,7 @@ COLOR_YELLOW := \033[33m
 COLOR_PURPLE := \033[35m
 FONT_BOLD := \033[1m
 
-.PHONY: all clean run iso directories
+.PHONY: all clean run iso directories gdb
 
 all: $(ALL_OBJS) 
 	make -f ./.target/x86_64-limine/Makefile all
@@ -72,7 +74,7 @@ run:
 		-m 2G
 
 debug:
-	@echo "$(COLOR_BLUE)[QEMU+GDB]$(COLOR_RESET) Starting with GDB server..."
+	@echo "$(COLOR_BLUE)[QEMU]$(COLOR_RESET) Starting the virtual machine with -s -S"
 	@qemu-system-x86_64 \
 	    -serial stdio \
 	    -d int \
@@ -81,6 +83,10 @@ debug:
 	    --no-reboot \
 	    --no-shutdown \
 	    -s -S
+
+gdb:
+	@gdb \
+		-x $(SCRIPTS_FOLDER)/debug.gdb
 
 clean:
 	@echo "$(COLOR_BLUE)[CLEAN]$(COLOR_RESET) Cleaning the build folder..."
