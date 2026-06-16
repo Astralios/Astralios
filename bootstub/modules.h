@@ -16,6 +16,7 @@ typedef struct
     module_t* modules;
 } modules_t;
 
+// TODO:  Maybe you don't even need modules
 static inline const module_t *module_find(const modules_t *modules, const char *name)
 {
     for (size_t i = 0; i < modules->num_modules; ++i)

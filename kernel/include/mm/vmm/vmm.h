@@ -47,17 +47,20 @@
 
 #pragma once
 
-#include "misc/helpers.h"
-#include "vendor/list.h"
 #include <stddef.h>
+
 #ifdef __ARCH_X86_64__
-#include "arch/x86_64/mm/paging.h"
+#include <arch/x86_64/mm/paging.h>
 #endif
+
+#include <libs/libds/list.h>
+#include <misc/helpers.h>
 
 typedef enum vmm_area_state_t {
     FREE,
     ALLOCATED,
     LAZILY_ALLOCATED,
+    RESERVED,
     VMM_REGION_STATE_COUNT
 } vmm_area_state_t;
 

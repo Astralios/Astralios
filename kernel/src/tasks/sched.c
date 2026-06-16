@@ -1,9 +1,19 @@
-#include "arch/x86_64/cpu/cpu.h"
-#include "misc/debug.h"
-#include "misc/helpers.h"
+#ifdef __ARCH_X86_64__
+#include <arch/x86_64/cpu/cpu.h>
+#include <arch/x86_64/desc/gdt.h>
+#include <arch/x86_64/mm/paging.h>
+#endif
+
+#include <misc/debug.h>
+#include <misc/helpers.h>
+
 #include <mm/vheap.h>
-#include <vendor/list.h>
+
+#include <libs/libds/list.h>
+
 #include <stdbool.h>
+#include <stdint.h>
+
 #include <tasks/sched.h>
 
 #define TASK_STACK_NUM_PAGES 4
@@ -38,50 +48,55 @@ void task_switch(task_t *from, task_t *to)
 {
     (void)from;
     curr_task = to;
+
+    if (to->pt && to->pt != from->pt)
+        pt_swap(to->pt);
 }
 
-void scheduler_schedule(task_t *task)
+void sched_schedule(task_t *task)
 {
     task_queue_add(&running_queue, task);
 }
 
-void scheduler_unschedule(task_t *task)
+void sched_unschedule(task_t *task)
 {
     task_queue_remove(task);
 }
 
-task_t *scheduler_select_task(void)
+task_t *sched_select_task(void)
 {
     if (list_empty(&running_queue)) 
         return idle_task;
     task_t *next = (task_t*)running_queue.next;
-    scheduler_unschedule(next);
-    scheduler_schedule(next);
+    sched_unschedule(next);
+    sched_schedule(next);
     return next;
 }
 
-void scheduler_switch(void)
+void sched_switch(void)
 {
     if (!scheduler_ready) 
         return;
-    task_t *new_task = scheduler_select_task();
+
+    task_t *new_task = sched_select_task();
     if (curr_task != new_task)
     {
+        debug("Switching to: %x", curr_task->pid);
         switch_to(curr_task, new_task);
     }
 }
 
-void yield(void)
+void task_yield(void)
 {
     cli();
-    scheduler_switch();
+    sched_switch();
     sti();
 }
 
 void task_sleep(void)
 {
     cli();
-    scheduler_unschedule(curr_task);
+    sched_unschedule(curr_task);
     task_queue_add(&waiting_queue, curr_task);
     sti();
 }
@@ -97,7 +112,7 @@ void task_wake_all_up(void)
 
         task_t *task = (task_t*)node;
         task_queue_remove(task);
-        scheduler_schedule(task);
+        sched_schedule(task);
 
         node = next;
     }
@@ -124,29 +139,57 @@ static void task_prelude(void)
 static void task_postlude(void)
 {
     cli();
-    scheduler_unschedule(curr_task);
+    sched_unschedule(curr_task);
     task_queue_add(&reaper_queue, curr_task);
     while (!list_empty(&reaper_wait_queue))
     {
         task_t *reaper = container_of(reaper_wait_queue.next, task_t, list);
-        scheduler_schedule(reaper);
+        sched_schedule(reaper);
     }
 
-    scheduler_switch();
+    sched_switch();
 }
 
-task_t *task_create(void (*entry)())
+task_t *kernel_task_create(void (*entry)())
 {
     task_t *task = task_alloc();
-    stack_allocate(&task->stack);
+    stack_allocate(&task->kernel_stack);
     
-    uint64_t *sp = (uint64_t*)task->stack.sp;
+    uint64_t *sp = (uint64_t*)task->kernel_stack.sp;
     *(--sp) = (uint64_t)task_postlude;
     *(--sp) = (uint64_t)entry;
     *(--sp) = (uint64_t)task_prelude;
     sp -= 6;
 
-    task->stack.sp = sp;
+    task->pt = NULL;
+    task->kernel_stack.sp = sp;
+    task->pid = next_pid++;
+    list_init(&task->list);
+
+    return task;
+}
+
+extern void user_task_prelude(void);
+
+task_t *user_task_create(void (*entry)())
+{
+    task_t *task = task_alloc();
+    stack_allocate(&task->user_stack);
+    stack_allocate(&task->kernel_stack);
+
+    uint64_t *krsp = (uint64_t*)task->kernel_stack.sp;
+    
+    *(--krsp) = offsetof(gdt_t, user_data_segment) | 0x3;
+    *(--krsp) = (uint64_t)task->user_stack.sp;
+    *(--krsp) = 0x202;
+    *(--krsp) = offsetof(gdt_t, user_code_segment) | 0x3;
+    *(--krsp) = (uint64_t)entry;
+    *(--krsp) = (uint64_t)user_task_prelude;
+    krsp -= 6;
+
+    task->pt = pt_create();
+    pt_join_kernel(task->pt, krnlctx(pt));
+
     task->pid = next_pid++;
     list_init(&task->list);
 
@@ -167,20 +210,20 @@ static void reaper_task_entry(void)
     {
         task_t *task = (task_t*)reaper_queue.next;
         task_queue_remove(task); 
-        vfree(task->stack.base);
+        vfree(task->kernel_stack.base);
         vfree(task);
     }
 
-    scheduler_unschedule(curr_task);
+    sched_unschedule(curr_task);
     sti();
-    yield();
+    task_yield();
 }
 
-void scheduler_init(void)
+void sched_init(void)
 {
     scheduler_ready = true;
-    idle_task = task_create(idle_loop); 
-    reaper_task = task_create(reaper_task_entry);
+    idle_task = kernel_task_create(idle_loop); 
+    reaper_task = kernel_task_create(reaper_task_entry);
     curr_task = &dummy_task;
 }
 

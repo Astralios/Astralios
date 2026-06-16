@@ -2,7 +2,7 @@
 #include <kernel.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <vendor/bitmap.h>
+#include <libs/libds/bitmap.h>
 
 extern size_t pmm_free_num_pages;
 

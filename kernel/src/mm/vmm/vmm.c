@@ -6,7 +6,7 @@
 #include <mm/pmm/pmm.h>
 #include <mm/vmm/vmm.h>
 #include <mm/vmm/misc.h>
-#include <vendor/list.h>
+#include <libs/libds/list.h>
 #include <string.h>
 
 void vmm_init(vmm_t *vmm, page_table_t *pt, vaddr_t addr, size_t num_pages)

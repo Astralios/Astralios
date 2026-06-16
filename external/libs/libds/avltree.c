@@ -1,4 +1,4 @@
-#include "../include/avltree.h"
+#include "avltree.h"
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
 

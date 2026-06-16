@@ -2,7 +2,7 @@
 
 #include <kernel.h>
 #include <stdint.h>
-#include <vendor/list.h>
+#include <libs/libds/list.h>
 
 /* TODO: Add colouring */
 /* TODO: Add flags */

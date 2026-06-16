@@ -1,7 +1,7 @@
 #pragma once
 
-#include "fb.h"
-#include "gfx/font.h"
+#include <fb.h>
+#include <gfx/font.h>
 #include <gfx/surface.h>
 
 typedef struct fbtty_t {

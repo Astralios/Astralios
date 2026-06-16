@@ -12,7 +12,7 @@ typedef struct GenericAddressStructure
   uint64_t Address;
 } GenericAddressStructure;
 
-typedef struct fadt_t
+typedef struct
 {
     acpi_sdt_header header;
     uint32_t FirmwareCtrl;

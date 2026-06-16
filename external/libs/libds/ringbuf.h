@@ -10,7 +10,7 @@ typedef enum {
 } ringbuf_mode_t;
 
 typedef struct {
-    char*           buf;
+    void*           buf;
     size_t          size;
     size_t          cap;
     size_t          len;
@@ -20,6 +20,7 @@ typedef struct {
 } ringbuf_t;
 
 bool ringbuf_init(ringbuf_t *ringbuf, size_t cap, size_t size, ringbuf_mode_t mode, alloc_fn alloc_fn);
-bool ringbuf_write(ringbuf_t *rb, const void *from);
-bool ringbuf_read(ringbuf_t *rb, void *to);
+bool ringbuf_write(ringbuf_t *rb, const void *buf);
+bool ringbuf_read(ringbuf_t *rb, void *buf);
+bool ringbuf_empty(ringbuf_t *rb);
 

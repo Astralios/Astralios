@@ -1,5 +1,4 @@
-#include "libs/libinput/include/kbd.h"
-#include "misc/debug.h"
+#include "libs/libinput/kbd.h"
 #include <drvs/ps2/kbd/scancodes.h>
 #include <misc/todo.h>
 #include <stdbool.h>

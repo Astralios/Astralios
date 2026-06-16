@@ -1,30 +1,34 @@
 #pragma once
 
+#include <kernel.h>
 #include <stdint.h>
-#include <vendor/list.h>
+#include <libs/libds/list.h>
 
-#define TASK_NAME_MAX_LEN   64
-
-typedef struct {
+typedef struct 
+{
     void*  sp;
     void*  base;
     size_t size;
 } stack_t;
 
-typedef struct task_t task_t;
-typedef struct task_t { 
+typedef struct
+{ 
     list_t  list;
-    stack_t stack;
+    stack_t kernel_stack;
+    stack_t user_stack;
     size_t  pid;
+    page_table_t *pt;
 } task_t;
 
-void yield(void);
-void scheduler_init(void);
-void scheduler_switch(void);
-task_t *task_create(void (*entry)());
-void scheduler_schedule(task_t *task);
-void scheduler_unschedule(task_t *task);
-void task_sleep(void);
-void task_wake_all_up(void);
+void sched_init(void);
+void sched_switch(void);
+void sched_schedule(task_t *task);
+void sched_unschedule(task_t *task);
 
+task_t* kernel_task_create(void (*entry)());
+task_t* user_task_create(void (*entry)());
+
+void    task_sleep(void);
+void    task_wake_all_up(void);
+void    task_yield(void);
 

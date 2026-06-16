@@ -1,4 +1,4 @@
-#include "../include/rbtree.h"
+#include "rbtree.h"
 
 static inline void replace_parents_child(
         rb_tree_t *tree,

@@ -50,17 +50,6 @@ static char *exception_code_to_str[] = {
     NULL,
 };
 
-static char *page_fault_err_code_to_str[] = {
-    "Present",
-    "Write",
-    "User",
-    "Reserved Write",
-    "Instruction Fetch",
-    "Protection Key",
-    "Shadow Stack",
-    [15] = "Software Guard Extension",
-};
-
 static inline void print_eframe(exception_frame_t *eframe)
 { 
     srprintf("\n");
@@ -89,22 +78,22 @@ static inline void print_eframe(exception_frame_t *eframe)
         eframe->rip);
 }
 
-// TODO: Maybe somehow get the symbols and print exactly where it faulted
+
 void isr_exception_handler(exception_frame_t *eframe)
-{
+{        
+    srprintf("\e[0;31m");
+    print_eframe(eframe); 
+    
     switch (eframe->exception_code)
     {
     case 0xE:
     {   
-        srprintf("\e[0;31m");
-        print_eframe(eframe);
-    
-        uint64_t err = eframe->error_code;
-        uint8_t num_bits = 32;
-
-        // srprintf("----- Error Code -----\n");
-        // print_flags(err, num_bits, page_fault_err_code_to_str);
         break; 
+    }
+    case 0xD:
+    {
+
+        break;
     }
     default:
         break;
@@ -129,7 +118,7 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     
         krnlctx(interrupt_controller)->send_eoi(iframe->vector_number);
         timer_callback();
-        scheduler_switch();
+        sched_switch();
         break;
     }
     case KBD_INT:

@@ -1,4 +1,4 @@
-#include "../include/ringbuf.h"
+#include "ringbuf.h"
 #include <stdbool.h>
 #include <string.h>
 
@@ -15,11 +15,16 @@ bool ringbuf_init(ringbuf_t *ringbuf, size_t cap, size_t size, ringbuf_mode_t mo
     return true;
 }
 
-bool ringbuf_write(ringbuf_t *rb, const void *from)
+bool ringbuf_empty(ringbuf_t *rb)
+{
+    return rb->len == 0 ? true : false;
+}
+
+bool ringbuf_write(ringbuf_t *rb, const void *buf)
 {
     if (rb->mode == RINGBUF_MODE_OVERWRITE)
     {
-        memcpy(rb->buf + rb->tail * rb->size, from, rb->size);
+        memcpy(rb->buf + rb->tail * rb->size, buf, rb->size);
 
         if (rb->len == rb->cap) {
             rb->head = (rb->head + 1) % rb->cap;
@@ -33,7 +38,7 @@ bool ringbuf_write(ringbuf_t *rb, const void *from)
     {
         if (rb->len == rb->cap) return false;
 
-        memcpy(rb->buf + rb->tail * rb->size, from, rb->size);
+        memcpy(rb->buf + rb->tail * rb->size, buf, rb->size);
         rb->tail = (rb->tail + 1) % rb->cap;
         rb->len++;
 
@@ -43,14 +48,15 @@ bool ringbuf_write(ringbuf_t *rb, const void *from)
     return false;
 }
 
-bool ringbuf_read(ringbuf_t *rb, void *to)
+bool ringbuf_read(ringbuf_t *rb, void *buf)
 {
     if (rb->len == 0) return false;
-
-    memcpy(to, rb->buf + rb->head * rb->size, rb->size);
+    memcpy(buf, rb->buf + rb->head * rb->size, rb->size);
 
     rb->head = (rb->head + 1) % rb->cap;
     rb->len--;
 
     return true;
 }
+
+

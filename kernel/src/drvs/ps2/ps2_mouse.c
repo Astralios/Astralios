@@ -1,3 +1,7 @@
+#include "devs/dev.h"
+#include "libs/libds/ringbuf.h"
+#include "libs/libinput/mse.h"
+#include "mm/vheap.h"
 #include <kernel.h>
 #include <stdbool.h>
 
@@ -11,44 +15,59 @@
 
 #include <misc/debug.h>
 
+static ringbuf_t evbuf;
+
+static ssize_t ps2_mse_read(void *buf, size_t count)
+{
+    ssize_t read_count = 0;
+    while (!ringbuf_empty(&evbuf) && count--)
+    {
+        ringbuf_read(&evbuf, (char*)buf + (read_count++) * evbuf.size);
+    }
+    return read_count;
+}
+
 void ps2_mouse_init(void)
 {
     ps2_writeCmd(0xD4);
     ps2_writeData(0xF4);
 
-    if (ps2_readData() != PS2_RES_ACK) return;
+    if (ps2_readData() != PS2_RES_ACK) 
+        return;
 
     krnlctx(interrupt_controller)->clear_mask(12);
     info(ps2_mouse_init, "Initalized!");
+
+    ringbuf_init(&evbuf, 256, sizeof(mse_ev_t), RINGBUF_MODE_OVERWRITE, vmalloc);
+
+    dev_create("ps2-mse", DEV_MAJOR_INPUT, DEV_MINOR_MSE, NULL, ps2_mse_read);
 }
 
 static uint8_t packet_idx = 0;
 static uint8_t packet[3] = {0};
 
-extern int x;
-extern int y;
-extern bool left_click;
-
 void ps2_mouse_callback(void)
 {
     int data = ps2_readData();
-    if (data < 0) return;
+    if (data < 0) 
+        return;
     
     packet[packet_idx++] = data;
 
     if (packet_idx == 3)
     {
-
+        mse_ev_t ev = {0};
         int dx = (int)packet[1];
         int dy = (int)packet[2];
     
         if (packet[0] & (1 << 4)) dx |= 0xFFFFFF00;
         if (packet[0] & (1 << 5)) dy |= 0xFFFFFF00;
-
-        x += dx;
-        y -= dy;
-
-        left_click = (packet[0] & 1); 
+        
+        ev.dx = dx;
+        ev.dy = dy;
+        ev.action |= (packet[0] & (1 << 0)) | (packet[0] & (1 << 1)) | (packet[0] & (1 << 2)); 
+            
+        ringbuf_write(&evbuf, &ev);
 
         packet_idx = 0;
     }

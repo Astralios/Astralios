@@ -1,4 +1,4 @@
-#include "../include/hashmap.h"
+#include "hashmap.h"
 
 void hashmap_init(
         hashmap_t *map, 
