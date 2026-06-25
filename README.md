@@ -1,3 +1,3 @@
 <p align="center">  
-  <strong>AstralisOS</strong> is the clone of Open95 main branch. 
+  <strong>stierium</strong> is NO LONGER contiuation of Open95
 </p>
