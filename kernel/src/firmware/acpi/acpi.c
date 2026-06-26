@@ -30,7 +30,7 @@ static inline void* acpi_get_rsdp(void)
     return (void*)bootctx(acpi_rsdp).addr;
 }
 
-acpi_sdt_header *acpi_find_sdt(const char signature[4])
+void *acpi_find_sdt(const char signature[4])
 {   
     if (rsdp->revision >= ACPI_VERSION_2)
     {
@@ -42,7 +42,7 @@ acpi_sdt_header *acpi_find_sdt(const char signature[4])
         for (size_t i = 0; i < num_entries; ++i)
         {
             acpi_sdt_header *header = (void*)to_vaddr(xsdt->sdts[i]);
-            if (strncmp(header->signature, signature, 4) == 0) return header;
+            if (strncmp(header->signature, signature, 4) == 0) return (void*)header;
         }
         return NULL;
     } else {
@@ -54,7 +54,7 @@ acpi_sdt_header *acpi_find_sdt(const char signature[4])
         for (size_t i = 0; i < num_entries; ++i)
         {
             acpi_sdt_header *header = (void*)to_vaddr(rsdt->sdts[i]);   
-            if (strncmp(header->signature, signature, 4) == 0) return header;
+            if (strncmp(header->signature, signature, 4) == 0) return (void*)header;
         }
         return NULL;
     }
@@ -73,12 +73,10 @@ void acpi_init(void)
     rsdp = acpi_get_rsdp(); 
     xsdp = acpi_get_rsdp();
     
-    
-
-    acpi_sdt_header *fadt_header = acpi_find_sdt("FACP");
+    fadt_t *fadt_header = acpi_find_sdt("FACP");
     if (fadt_header)
     {
-        fadt = (fadt_t*)fadt_header;
+        return;
     }
 
     acpi_sdt_header *madt_header = acpi_find_sdt("APIC");

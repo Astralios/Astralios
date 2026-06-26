@@ -4,5 +4,6 @@
 
 void initrd_init(void)
 {
+
 }
 

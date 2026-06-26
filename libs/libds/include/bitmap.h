@@ -30,7 +30,7 @@ static inline uint8_t bitmap_bit(bitmap_t *bitmap, size_t idx)
     return (bitmap->map[byte_idx] >> bit_idx) & 0b1;
 }
 
-static size_t bitmap_find_contiguous_range(bitmap_t *bitmap, size_t contiguous_bits_needed)
+static inline size_t bitmap_find_contiguous_range(bitmap_t *bitmap, size_t contiguous_bits_needed)
 {
     size_t len = 0;
     for (size_t i = 0; i < bitmap->size; i++)
@@ -42,7 +42,7 @@ static size_t bitmap_find_contiguous_range(bitmap_t *bitmap, size_t contiguous_b
     return (size_t)(-1);
 }
 
-static size_t bitmap_find_contiguous_range_from(bitmap_t *bitmap, size_t from, size_t contiguous_bits_needed)
+static inline size_t  bitmap_find_contiguous_range_from(bitmap_t *bitmap, size_t from, size_t contiguous_bits_needed)
 {
     size_t len = 0;
     for (size_t i = from; i < bitmap->size; i++)
@@ -54,13 +54,13 @@ static size_t bitmap_find_contiguous_range_from(bitmap_t *bitmap, size_t from, s
     return (size_t)(-1);
 }
 
-static void bitmap_set_range(bitmap_t *bitmap, size_t idx, size_t size)
+static inline void bitmap_set_range(bitmap_t *bitmap, size_t idx, size_t size)
 {
     if (size + idx >= bitmap->size) return;
     for (size_t i = idx; i < idx + size; i++) bitmap_set(bitmap, i);
 }
 
-static void bitmap_unset_range(bitmap_t *bitmap, size_t idx, size_t size)
+static inline void bitmap_unset_range(bitmap_t *bitmap, size_t idx, size_t size)
 {
     if (size + idx >= bitmap->size) return;
     for (size_t i = idx; i < idx + size; i++) bitmap_unset(bitmap, i);

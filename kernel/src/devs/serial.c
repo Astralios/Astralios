@@ -2,12 +2,12 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <wchar.h>
 
 #ifdef __ARCH_X86_64__
 #include <arch/x86_64/hw/io.h>
 #endif
 
+#include <misc/printf.h>
 #include <devs/serial.h>
 
 int serial_init()
@@ -52,7 +52,7 @@ int is_transmit_empty()
     return inb(COM1_PORT + 5) & 0x20;
 }
 
-void srput(char a)
+void srput(int a)
 {
     while (is_transmit_empty() == 0)
         ;
@@ -74,137 +74,8 @@ void srprintf(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-
-    while (*fmt)
-    {
-        if (*fmt == '%')
-        {
-            fmt++;
-            switch (*fmt)
-            {
-            case 's':
-            {
-                const char *value = va_arg(args, const char *);
-                srputs(value);
-                break;
-            }
-            case 'c':
-            {
-                int value = va_arg(args, int);
-                srput((char)value);
-                break;
-            } 
-            case 'd':
-            {
-                int value = va_arg(args, int);
-
-                if (value == 0)
-                {
-                    srput('0');
-                    break;
-                }
-
-                if (value < 0)
-                {
-                    srput('-');
-                    value = -value;
-                }
-
-                char str[64] = {0};
-                int i = 0;
-                while (value > 0)
-                {
-                    char digit = value % 10 + '0';
-                    value /= 10;
-                    str[i++] = digit;
-                }
-
-                for (int i = 63; i >= 0; i--)
-                {
-                    srput(str[i]);
-                }
-
-                break;
-            }
-            case 'z':
-            {
-                if (*(fmt + 1) && *(fmt + 1) == 'u')
-                {
-                    fmt++;
-                    size_t value = va_arg(args, size_t);
-
-                    if (value == 0)
-                    {
-                        srput('0');
-                        break;
-                    }
-
-                    char str[64] = {0};
-                    int i = 0;
-                    while (value > 0)
-                    {
-                        char digit = value % 10 + '0';
-                        value /= 10;
-                        str[i++] = digit;
-                    }
-
-                    for (int i = 63; i >= 0; i--)
-                    {
-                        srput(str[i]);
-                    }
-                }
-                else
-                {
-                    fmt--;
-                }
-
-                break;
-            }
-            case 'x':
-            {
-                uint64_t value = va_arg(args, uint64_t);
-
-                for (int i = 2 * sizeof(uint64_t); i > 0; i--)
-                {
-                    int new_val = (value >> ((i - 1) * 4)) & 0xF;
-
-                    if (new_val < 10)
-                    {
-                        srput(new_val + '0');
-                    }
-                    else
-                    {
-                        srput(new_val + 'A' - 10);
-                    }
-                }
-
-                break;
-            }
-            case 'b':
-            {
-                uint64_t value = va_arg(args, uint64_t);
-                for (size_t i = 8 * sizeof(uint64_t); i > 0; i--)
-                {
-                    uint8_t new_val = (value >> (i - 1)) & 0b1;
-                    srput(new_val + '0');
-                }
-                break;
-            }
-            case '%':
-            {
-                srput('%');
-
-                break;
-            }
-            }
-        }
-        else
-        {
-            srput(*fmt);
-        }
-
-        fmt++;
-    }
+ 
+    _printf(srput, srputs, fmt, args);
 
     va_end(args);
 }

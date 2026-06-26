@@ -11,14 +11,12 @@ typedef enum inode_kind_t: uint8_t
 {
     INODE_DIR,
     INODE_FILE,
-    INODE_DEV,
 
     INODE_KIND_COUNT
 } inode_kind_t;
 
 typedef struct inode_ops_t 
 {
-    int  (*rmfile)(inode_t *file);
     int  (*create)(inode_t *dir, const char *name, size_t name_len, inode_kind_t kind, inode_t **ret);
     int  (*lookup)(inode_t *dir, const char *name, size_t name_len, inode_t **ret);
     long (*read)  (inode_t *inode, void *buf, size_t count, size_t offset);

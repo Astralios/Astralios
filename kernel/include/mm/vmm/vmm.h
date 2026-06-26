@@ -53,7 +53,7 @@
 #include <arch/x86_64/mm/paging.h>
 #endif
 
-#include <libs/libds/list.h>
+#include <libds/include/list.h>
 #include <misc/helpers.h>
 
 typedef enum vmm_area_state_t {

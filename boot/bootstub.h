@@ -55,4 +55,3 @@ typedef struct bootloader_ctx_t
     fb_t*       fbs;
 } bootloader_ctx_t;
 
-        

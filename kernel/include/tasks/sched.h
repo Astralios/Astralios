@@ -2,7 +2,7 @@
 
 #include <kernel.h>
 #include <stdint.h>
-#include <libs/libds/list.h>
+#include <libds/include/list.h>
 
 typedef struct 
 {
@@ -26,7 +26,7 @@ void sched_schedule(task_t *task);
 void sched_unschedule(task_t *task);
 
 task_t* kernel_task_create(void (*entry)());
-task_t* user_task_create(void (*entry)());
+task_t* user_task_create(uint64_t addr);
 
 void    task_sleep(void);
 void    task_wake_all_up(void);

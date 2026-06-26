@@ -15,6 +15,7 @@ bool ringbuf_init(ringbuf_t *ringbuf, size_t cap, size_t size, ringbuf_mode_t mo
     return true;
 }
 
+
 bool ringbuf_empty(ringbuf_t *rb)
 {
     return rb->len == 0 ? true : false;

@@ -80,6 +80,7 @@ int8_t ps2_keyboard_get_scancode_set(void)
     return ps2_readData();
 }
 
+__attribute__((unused))
 static char* controller_config_to_str[] = {
     "FIRST PORT INTERRUPT",
     "SECOND PORT INTERRUPT",

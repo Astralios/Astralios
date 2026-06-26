@@ -1,3 +1,4 @@
+#include "arch/x86_64/desc/tss.h"
 #include <arch/x86_64/desc/gdt.h>
 #include <misc/debug.h>
 

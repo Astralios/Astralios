@@ -53,6 +53,7 @@ void idt_init(void)
 
   create_descriptor(0x2C, INTERRUPT_GATE, isr_mouse_interrupt);
   create_descriptor(0x30, INTERRUPT_GATE, isr_com1_interrupt);
+  create_descriptor(0x80, 0b1110 | (0b11 << 5) | (0b1 << 7), isr_syscall_interrupt);  
 
   __asm__ volatile(
       "lidt %0\n"

@@ -1,6 +1,16 @@
+#include "arch/x86_64/desc/tss.h"
+#include "arch/x86_64/hw/io.h"
+#include "arch/x86_64/pit.h"
 #include "drvs/ps2/kbd/misc.h"
-#include "libs/libinput/kbd.h"
-#include <libs/libinput/mse.h>
+#include "drvs/rtc/misc.h"
+#include "drvs/rtc/rtc.h"
+#include "libinput/include/kbd.h"
+#include <drvs/cmos.h>
+#include <drvs/rtc/rtc.h>
+#include "misc/helpers.h"
+#include "tasks/sched.h"
+#include "tasks/syscall.h"
+#include <libinput/include/mse.h>
 #include <devs/dev.h>
 #include <fs/tar.h>
 #include <fs/tmpfs.h>
@@ -45,6 +55,84 @@
 #endif
 
 krnl_ctx_t krnl_ctx;
+
+#define EI_NIDENT 16
+#define ELFMAG0 0x7f
+#define ELFMAG1 'E'
+#define ELFMAG2 'L'
+#define ELFMAG3 'F'
+
+typedef uint64_t Elf64_Addr;
+typedef uint64_t Elf64_Off;
+typedef uint16_t Elf64_Half;
+typedef uint32_t Elf64_Word;
+typedef int32_t Elf64_Sword;
+typedef uint64_t Elf64_Xword;
+typedef int64_t Elf64_Sxword;
+
+typedef struct
+{
+    unsigned char e_ident[EI_NIDENT];
+    Elf64_Half e_type;
+    Elf64_Half e_machine;
+    Elf64_Word e_version;
+    Elf64_Addr e_entry;
+    Elf64_Off e_phoff;
+    Elf64_Off e_shoff;
+    Elf64_Word e_flags;
+    Elf64_Half e_ehsize;
+    Elf64_Half e_phentsize;
+    Elf64_Half e_phnum;
+    Elf64_Half e_shentsize;
+    Elf64_Half e_shnum;
+    Elf64_Half e_shstrndx;
+} Elf64_Ehdr;
+
+typedef struct 
+{
+    Elf64_Word p_type;
+    Elf64_Word p_flags;
+    Elf64_Off p_offset;
+    Elf64_Addr p_vaddr;
+    Elf64_Addr p_paddr;
+    Elf64_Xword p_filesz;
+    Elf64_Xword p_memsz;
+    Elf64_Xword p_align;
+} Elf64_Phdr;
+
+void user_test_entry()
+{
+    syscall_set_number(5);
+    __asm__("int $0x80");
+    while (1);
+}
+
+static void play_sound(uint32_t nFrequence) {
+ 	uint32_t Div;
+ 	uint8_t tmp;
+ 
+ 	Div = 1193180 / nFrequence;
+ 	outb(0x43, 0xb6);
+ 	outb(0x42, (uint8_t) (Div) );
+ 	outb(0x42, (uint8_t) (Div >> 8));
+ 
+ 	tmp = inb(0x61);
+  	if (tmp != (tmp | 3)) {
+ 		outb(0x61, tmp | 3);
+ 	}
+ }
+ 
+ static void nosound() {
+ 	uint8_t tmp = inb(0x61) & 0xFC;
+     
+ 	outb(0x61, tmp);
+ }
+ 
+ void beep() {
+ 	 play_sound(1000);
+ 	 pit_sleep_ms(10);
+ 	 nosound();
+ }
 
 void kmain(bootloader_ctx_t *ctx)
 {
@@ -93,24 +181,53 @@ void kmain(bootloader_ctx_t *ctx)
     inode_t *hello_inode = NULL;
     vfs_lookup(&hello, &hello_inode);
 
-    gfx_surface_t *surface = gfx_surface_create(&bootctx(fbs)[0]);
-    dev_t *dev = dev_find("ps2-mse");
-    int x = 50;
-    int y = 50;
-    while (1)
+    path_t elf_file_path = vfs_path_from_abs("/initrd/main");
+    inode_t *elf_file = NULL;
+    if (vfs_lookup(&elf_file_path, &elf_file) >= 0)
     {
-        mse_ev_t ev = {0};
-        if (dev_read(dev, &ev, 1) > 0)
-        {
-            gfx_draw_rect(surface, x, y, 25, 25, 0x0);
-            gfx_surface_sync_chunk(surface, x, y, 25, 25);
-            x += ev.dx;
-            y += -ev.dy;
-            gfx_draw_rect(surface, x, y, 25, 25, 0xFFFF00);
-            gfx_surface_sync_chunk(surface, x, y, 25, 25);
-        }
+        debug("Found the elf file successfully!");
     }
+
+    paddr_t phys = pmm_alloc(1);
+
+    pt_map(
+        krnlctx(pt),
+
+     phys,
+     0x400000,   
+     PAGE_FLAG_PRESENT |
+            PAGE_FLAG_READ_WRITE |
+            PAGE_FLAG_USER_SUPERVISOR
+    );
+
+    uint8_t *code = paddr_ptr(phys);
+    code[0] = 0x48; 
+    code[1] = 0xC7; 
+    code[2] = 0xC0; 
+    code[3] = 0x01; 
+    code[4] = 0x00; 
+    code[5] = 0x00; 
+    code[6] = 0x00;
+    code[7] = 0xCD;
+    code[8] = 0x80;
+    code[9] = 0xEB;
+    code[10] = 0xFE;
+
+    paddr_t stack = pmm_alloc(1);
+ 
+    pt_map(
+        krnlctx(pt),
+        
+     stack,
+     0x510000, 
+     PAGE_FLAG_PRESENT |
+            PAGE_FLAG_READ_WRITE |
+            PAGE_FLAG_USER_SUPERVISOR
+    );   
+
+    tss.rsp0 = read_sp();
+    extern void userspace_jump();
+    userspace_jump();
 
     hcf();
 }
-

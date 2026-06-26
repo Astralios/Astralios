@@ -56,7 +56,13 @@ static inline uint64_t read_cr2(void)
         "mov %%cr2, %0" : "=r"(val));
     return val;
 }
-
+static inline uint64_t read_sp(void)
+{
+    uint64_t val;
+    __asm__ volatile(
+        "mov %%rsp, %0" : "=r"(val));
+    return val;
+}
 static inline uint64_t read_eflags(void)
 {
      uint64_t val;

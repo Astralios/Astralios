@@ -1,4 +1,5 @@
 #include <arch/x86_64/ints/exceptions.h>
+#include <devs/serial.h>
 
 static char *exception_code_to_str[] = {
     [EXCEPTION_DIVISION_ERROR] = "Division Error",

@@ -10,7 +10,7 @@ tss_t tss = {0};
 void tss_init(void)
 {
     tss_entry_t *tss_segment = &gdt.tss_segment;
-    tss_segment->low_base = sizeof(tss_t) - 1;
+    tss_segment->low_limit = sizeof(tss_t) - 1;
     uint64_t tss_ptr = (uint64_t)&tss;
     tss_segment->low_base = tss_ptr;
     tss_segment->mid_base = tss_ptr >> 16;
@@ -24,5 +24,7 @@ void tss_init(void)
         "ltr %0"
         :
         : "r"((uint16_t)offsetof(gdt_t, tss_segment)));
+
+        
     info(tss_init, "Initialized");
 }

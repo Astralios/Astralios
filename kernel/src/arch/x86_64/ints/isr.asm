@@ -184,6 +184,11 @@ isr_com1_interrupt:
     push 0x30
     jmp isr_interrupt
 
+global isr_syscall_interrupt
+isr_syscall_interrupt:
+    push 0x80
+    jmp isr_interrupt
+
 global isr_interrupt
 extern isr_interrupt_handler
 isr_interrupt:

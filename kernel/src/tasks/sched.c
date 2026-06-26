@@ -1,3 +1,5 @@
+#include "kernel.h"
+#include "mm/pmm/pmm.h"
 #ifdef __ARCH_X86_64__
 #include <arch/x86_64/cpu/cpu.h>
 #include <arch/x86_64/desc/gdt.h>
@@ -9,7 +11,7 @@
 
 #include <mm/vheap.h>
 
-#include <libs/libds/list.h>
+#include <libds/include/list.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -168,27 +170,43 @@ task_t *kernel_task_create(void (*entry)())
 
     return task;
 }
-
 extern void user_task_prelude(void);
 
-task_t *user_task_create(void (*entry)())
+task_t *user_task_create(uint64_t addr)
 {
     task_t *task = task_alloc();
-    stack_allocate(&task->user_stack);
     stack_allocate(&task->kernel_stack);
+    vaddr_t stack_start = 0x00007FFFFFFFFFFF;
+    task->user_stack.base = (void*)stack_start;
+    task->user_stack.size = TASK_STACK_NUM_PAGES;
+    task->user_stack.sp   = (char*)stack_start + TASK_STACK_NUM_PAGES;
 
     uint64_t *krsp = (uint64_t*)task->kernel_stack.sp;
-    
+
     *(--krsp) = offsetof(gdt_t, user_data_segment) | 0x3;
     *(--krsp) = (uint64_t)task->user_stack.sp;
     *(--krsp) = 0x202;
     *(--krsp) = offsetof(gdt_t, user_code_segment) | 0x3;
-    *(--krsp) = (uint64_t)entry;
+    *(--krsp) = addr;
     *(--krsp) = (uint64_t)user_task_prelude;
     krsp -= 6;
 
+    task->kernel_stack.sp = krsp;
+
     task->pt = pt_create();
     pt_join_kernel(task->pt, krnlctx(pt));
+
+    paddr_t base = pmm_alloc(TASK_STACK_NUM_PAGES);
+
+    for (size_t i = 0; i < TASK_STACK_NUM_PAGES; ++i)
+    {
+        pt_map(
+                task->pt, 
+                base + i * PAGE_SIZE, 
+                stack_start + i * PAGE_SIZE, 
+                PAGE_FLAG_PRESENT | PAGE_FLAG_READ_WRITE | PAGE_FLAG_USER_SUPERVISOR
+                );
+    }
 
     task->pid = next_pid++;
     list_init(&task->list);
@@ -221,9 +239,11 @@ static void reaper_task_entry(void)
 
 void sched_init(void)
 {
+    cli();
     scheduler_ready = true;
     idle_task = kernel_task_create(idle_loop); 
     reaper_task = kernel_task_create(reaper_task_entry);
     curr_task = &dummy_task;
+    sti();
 }
 

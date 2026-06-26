@@ -2,13 +2,13 @@
 #include <mm/vheap.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <libs/libds/ringbuf.h>
+#include <libds/include/ringbuf.h>
 
 #ifdef __ARCH_X86_64__
 #include <arch/x86_64/ints/pic.h>
 #endif
 
-#include <libs/libinput/kbd.h>
+#include <libinput/include/kbd.h>
 #include <drvs/ps2/misc.h>
 #include <drvs/ps2/kbd/scancodes.h>
 #include <drvs/ps2/kbd/misc.h>

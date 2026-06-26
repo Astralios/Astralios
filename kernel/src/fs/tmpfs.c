@@ -133,12 +133,8 @@ int tmpfs_create(inode_t *dir, const char *name, size_t name_len, inode_kind_t k
 
 int tmpfs_rmfile(inode_t *file)
 {
-    tmpfs_inode_t *tmpfs_file = file->priv;
-
-    for (size_t i = 0; i < tmpfs_file->cap; ++i)
-    {
-        
-    }
+    (void)file;
+    return -UNIMPLEMENTED;
 }
 
 long tmpfs_read(inode_t *inode, void *buf, size_t count, size_t offset)

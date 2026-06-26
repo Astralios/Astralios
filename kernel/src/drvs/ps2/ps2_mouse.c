@@ -1,6 +1,6 @@
 #include "devs/dev.h"
-#include "libs/libds/ringbuf.h"
-#include "libs/libinput/mse.h"
+#include <libds/include/ringbuf.h>
+#include <libinput/include/mse.h>
 #include "mm/vheap.h"
 #include <kernel.h>
 #include <stdbool.h>

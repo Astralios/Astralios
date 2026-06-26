@@ -49,6 +49,7 @@ static inline void list_remove(list_t *list) {
     list->prev = list;
 }
 
+__attribute__((unused))
 static list_t* list_next(list_t* list) {
     return list->next != list ? list->next : NULL;
 }

@@ -36,6 +36,7 @@ void hashmap_set(hashmap_t *map, void *key, void *val, hashmap_set_mode_t mode)
 {
     size_t hash = map->hash_fn(key);
     size_t idx = hash % map->cap;
+    (void)idx;
 
     switch (mode) {
     case TAKE: {

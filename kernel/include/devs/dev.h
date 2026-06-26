@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <libs/libds/list.h>
+#include <libds/include/list.h>
 
 typedef intptr_t ssize_t;
 typedef ssize_t(*write_fn_t)(const void *buf, size_t count);

@@ -125,7 +125,7 @@ void pt_map(page_table_t *pt, paddr_t paddr, vaddr_t vaddr, page_flags_t flags)
     set_page_entry(&pt2->entries[pt2_idx]);
 
     page_table_t *pt1 = paddr_ptr(pt2->entries[pt2_idx] & PAGE_PHYSICAL_ADDRESS_MASK);
-    pt1->entries[pt1_idx] = (paddr & PAGE_PHYSICAL_ADDRESS_MASK) | (flags & 0xFFF);
+    pt1->entries[pt1_idx] = (paddr & PAGE_PHYSICAL_ADDRESS_MASK) | flags;
 }
 
 void pt_unmap(page_table_t *pt, vaddr_t vaddr)

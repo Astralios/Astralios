@@ -3,7 +3,7 @@
 #include <kernel.h>
 #include <stdint.h>
 
-typedef enum page_flags_t
+typedef enum page_flags_t: uint64_t
 {
     PAGE_FLAG_PRESENT           = 1 << 0,
     PAGE_FLAG_READ_WRITE        = 1 << 1,
@@ -15,6 +15,7 @@ typedef enum page_flags_t
     PAGE_FLAG_PAT               = 1 << 7,
     PAGE_FLAG_GLOBAL            = 1 << 8,
     PAGE_FLAG_COW               = 1 << 9,
+    PAGE_FLAG_EXEC              = 1UL << 63
 } page_flags_t;
 
 typedef uint64_t page_entry_t;

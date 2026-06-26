@@ -1,5 +1,8 @@
+#include "arch/x86_64/cpu/cpu.h"
 #include "arch/x86_64/pit.h"
+#include "misc/bitflags.h"
 #include "misc/debug.h"
+#include "tasks/syscall.h"
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -79,6 +82,17 @@ static inline void print_eframe(exception_frame_t *eframe)
 }
 
 
+static const char *pf_err_codes[] = {
+    "PRESENT",
+    "WRITE",
+    "USER",
+    "RESERVED",
+    "INSTRUCTION FETCH",
+    "PROTECTION KEY",
+    "SHADOW STACK",
+    "SOFTWARE GUARD EXTENSIONS"
+};
+
 void isr_exception_handler(exception_frame_t *eframe)
 {        
     srprintf("\e[0;31m");
@@ -87,7 +101,11 @@ void isr_exception_handler(exception_frame_t *eframe)
     switch (eframe->exception_code)
     {
     case 0xE:
-    {   
+    {
+        srprintf("Faulting adddress: %x\n", read_cr2());
+        srprintf("Error code: ");
+        print_flags(eframe->error_code, 32, (char**)pf_err_codes);
+        srprintf("\n");
         break; 
     }
     case 0xD:
@@ -108,6 +126,7 @@ typedef enum interrupt_t {
     KBD_INT,
     MOUSE_INT = 0x2C,
     COM1_INT = 0x30,
+    SYSCALL_INT = 0x80
 } interrupt_t;
 
 void isr_interrupt_handler(interrupt_frame_t *iframe)
@@ -115,7 +134,6 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     switch (iframe->vector_number) {
     case PIT_INT:
     {
-    
         krnlctx(interrupt_controller)->send_eoi(iframe->vector_number);
         timer_callback();
         sched_switch();
@@ -130,6 +148,11 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     case COM1_INT:
     {
         serial_com1_callback();
+        break;
+    }
+    case SYSCALL_INT:
+    {
+        syscall_handler(iframe);   
         break;
     }
     }

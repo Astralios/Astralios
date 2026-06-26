@@ -1,8 +1,9 @@
-#include "libs/libinput/kbd.h"
+#include "libinput/include/kbd.h"
 #include <drvs/ps2/kbd/scancodes.h>
 #include <misc/todo.h>
 #include <stdbool.h>
 
+__attribute__((unused))
 static key_t scancode_set_1[] = {
     KEY_NONE, KEY_ESC, KEY_1, KEY_2, KEY_3,
     KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0,

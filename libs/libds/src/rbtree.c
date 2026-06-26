@@ -65,5 +65,6 @@ static inline void rotate_left(
 
 void rb_tree_insert(rb_tree_t *tree, rb_node_t *node)
 {
-
+    (void)tree;
+    (void)node;
 }

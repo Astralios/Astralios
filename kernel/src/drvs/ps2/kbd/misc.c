@@ -134,10 +134,10 @@ const char *key_to_string(key_t key) {
 
 const char *key_action_to_string(key_action_t action)
 {
-    switch (action)
+    if (action == KEY_ACTION_PRESS)
     {
-    case KEY_ACTION_RELEASE: return stringify(KEY_ACTION_RELEASE);
-    case KEY_ACTION_PRESS: return stringify(KEY_ACTION_PRESS);
-    default: return "Unknown";
+        return stringify(KEY_ACTION_PRESS);
+    } else {
+        return stringify(KEY_ACTION_RELEASE);
     }
 }

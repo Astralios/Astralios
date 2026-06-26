@@ -7,7 +7,7 @@ int serial_received();
 char read_serial();
 int is_transmit_empty();
 
-void srput(char a);
+void srput(int a);
 void srputs(const char *str);
 void srprintf(const char *fmt, ...);
 void serial_com1_callback();
