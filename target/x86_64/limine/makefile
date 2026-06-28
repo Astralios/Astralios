@@ -1,29 +1,34 @@
+.PHONY: all download_binaries
+
 include ../../../make.conf
 
-CPPFLAGS  		:= -I./limine/ -I$(ROOT_DIR)/boot/ -D __protocol_$(PROTOCOL)__ -MMD -MP
+CPPFLAGS    := -I./limine/ -I$(ROOT_DIR)/boot/ -D __protocol_$(PROTOCOL)__ -MMD -MP
 MODULE_NAME := limine
 
-ALL_OBJS := $(shell find $(OBJS_DIR) -name '*.o')
-CFLAGS    			:= -Wall -Wextra -std=gnu11 -ffreestanding -fno-stack-protector \
-             		   -fno-stack-check -fno-PIC -m64 -march=x86-64 -mno-80387 \
-             		   -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -mcmodel=kernel -g
-LDFLAGS 			:= -Wl,-m,elf_x86_64 -Wl,--build-id=none -nostdlib -static \
-        			   -z max-page-size=0x1000 -T ./linker.ld
+ifeq ($(wildcard limine/limine.h),)
+    $(shell rm -rf limine && git clone https://github.com/Astralios/stierium-limine-binaries limine)
+endif
 
-ISO := $(BUILD_DIR)/image.iso
-KERNEL := kernel
+include $(BUILD_MK)
 
-all: $(ALL_OBJS) $(KERNEL) $(ISO) 
+ALL_OBJS     = $(shell find $(OBJS_DIR) -name '*.o')
 
-download_binaries:
-# TODO
+CFLAGS      := -Wall -Wextra -std=gnu11 -ffreestanding -fno-stack-protector \
+               -fno-stack-check -fno-PIC -m64 -march=x86-64 -mno-80387 \
+               -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -mcmodel=kernel -g
+LDFLAGS     := -Wl,-m,elf_x86_64 -Wl,--build-id=none -nostdlib -static \
+               -z max-page-size=0x1000 -T ./linker.ld
+KERNEL      := kernel
+ISO         := $(BUILD_DIR)/image.iso 
+
+all: $(ISO)
 
 $(KERNEL): $(ALL_OBJS)
 	@cc $(CFLAGS) $(LDFLAGS) $(ALL_OBJS) -o $(KERNEL)
 
 $(ISO): $(KERNEL) limine.conf
 	@mkdir -p $(ISO_ROOT_DIR)/boot/limine $(ISO_ROOT_DIR)/EFI/BOOT
-	@mv $(KERNEL) $(ISO_ROOT_DIR)/boot/$(KERNEL)
+	@cp $(KERNEL) $(ISO_ROOT_DIR)/boot/$(KERNEL)
 	@cp -v ./limine.conf $(ISO_ROOT_DIR)/boot/limine/
 	@cp -v ./limine/limine-bios.sys \
 	       ./limine/limine-bios-cd.bin \
@@ -41,5 +46,3 @@ $(ISO): $(KERNEL) limine.conf
 	         --protective-msdos-label \
 	         $(ISO_ROOT_DIR) -o $(ISO)
 	@./limine/limine bios-install $(ISO)
-
-include $(BUILD_MK)

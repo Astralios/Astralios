@@ -1,8 +1,8 @@
 include make.conf
 
-.PHONY: directories initrd all clean
+.PHONY: directories initrd all clean build iso
 
-all: directories initrd
+all: directories build initrd iso
 
 directories:
 	@mkdir -p $(BUILD_DIR)
@@ -10,28 +10,28 @@ directories:
 	@mkdir -p $(BOOT_DIR)
 	@mkdir -p $(OBJS_DIR)
 
+build:
+	make -f build.mk
+
 INITRD_DIR  := initrd/
 INITRD_ZIP  := initrd.tar
 
 initrd: directories
 	@tar -cvf $(BOOT_DIR)/$(INITRD_ZIP) $(INITRD_DIR)
 
+iso: build
+	make -C target/$(ARCH)/$(BOOTLDR)/
+
 run:
 	@qemu-system-x86_64 \
-	-serial stdio \
-	-d int \
-	-D qemu.log \
-	--no-reboot \
-	--no-shutdown \
-	-m 2g \
-	$(BUILD_DIR)/image.iso
-
-include build.mk
-
-all: iso
+		-serial stdio \
+		-d int \
+		-D qemu.log \
+		-no-reboot \
+		-no-shutdown \
+		-m 2g \
+		$(BUILD_DIR)/image.iso
 
 clean:
 	rm -rf $(BUILD_DIR)
-
-iso: 
-	make -C target/$(ARCH)/$(BOOTLDR)/
+	
