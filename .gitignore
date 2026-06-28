@@ -1,4 +1,5 @@
 .vscode
 .build
 .cache
+qemu.logqemu.log
 qemu.log
