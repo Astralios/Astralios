@@ -31,6 +31,11 @@ typedef struct inode_t
     void *              priv;
 } inode_t;
 
+typedef struct superblock_t 
+{
+
+} superblock_t;
+
 typedef struct fs_t {
     int (*mount)(inode_t **root);
 } fs_t;

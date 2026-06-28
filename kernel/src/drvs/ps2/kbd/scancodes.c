@@ -1,6 +1,5 @@
 #include "libinput/include/kbd.h"
 #include <drvs/ps2/kbd/scancodes.h>
-#include <misc/todo.h>
 #include <stdbool.h>
 
 __attribute__((unused))
@@ -103,7 +102,6 @@ kbd_ev_t ps2_decodeFromScancode(uint8_t sc, uint8_t set)
 
     switch (set) {
     case 1:
-        todo(ps2_decodeFromScancode, "Unimplemented");
         break;
     case 2:
     {
@@ -138,7 +136,6 @@ kbd_ev_t ps2_decodeFromScancode(uint8_t sc, uint8_t set)
         break;
     }
     case 3:
-        todo(ps2_decodeFromScancode, "Unimplemented!");
         break;
     default:
         goto end;

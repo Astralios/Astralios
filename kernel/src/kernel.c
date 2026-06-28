@@ -1,6 +1,7 @@
 #include "arch/x86_64/desc/tss.h"
 #include "arch/x86_64/hw/io.h"
 #include "arch/x86_64/pit.h"
+#include <misc/panic.h>
 #include "drvs/ps2/kbd/misc.h"
 #include "drvs/rtc/misc.h"
 #include "drvs/rtc/rtc.h"
@@ -18,6 +19,7 @@
 #include <mm/vheap.h>
 #include <modules.h>
 #include <kernel.h>
+#include <fs/initrd.h>
 
 #include <string.h>
 #include <stdint.h>
@@ -54,85 +56,203 @@
 #include <arch/x86_64/ints/apic.h>
 #endif
 
+#include <terminal/fbtty.h>
+
 krnl_ctx_t krnl_ctx;
+fbtty_t fbtty;
 
-#define EI_NIDENT 16
-#define ELFMAG0 0x7f
-#define ELFMAG1 'E'
-#define ELFMAG2 'L'
-#define ELFMAG3 'F'
+char key_to_char(key_t key, bool shift) {
+  switch (key) {
+  case KEY_1:
+    return shift ? '!' : '1';
+  case KEY_2:
+    return shift ? '@' : '2';
+  case KEY_3:
+    return shift ? '#' : '3';
+  case KEY_4:
+    return shift ? '$' : '4';
+  case KEY_5:
+    return shift ? '%' : '5';
+  case KEY_6:
+    return shift ? '^' : '6';
+  case KEY_7:
+    return shift ? '&' : '7';
+  case KEY_8:
+    return shift ? '*' : '8';
+  case KEY_9:
+    return shift ? '(' : '9';
+  case KEY_0:
+    return shift ? ')' : '0';
 
-typedef uint64_t Elf64_Addr;
-typedef uint64_t Elf64_Off;
-typedef uint16_t Elf64_Half;
-typedef uint32_t Elf64_Word;
-typedef int32_t Elf64_Sword;
-typedef uint64_t Elf64_Xword;
-typedef int64_t Elf64_Sxword;
+  case KEY_A:
+    return shift ? 'A' : 'a';
+  case KEY_B:
+    return shift ? 'B' : 'b';
+  case KEY_C:
+    return shift ? 'C' : 'c';
+  case KEY_D:
+    return shift ? 'D' : 'd';
+  case KEY_E:
+    return shift ? 'E' : 'e';
+  case KEY_F:
+    return shift ? 'F' : 'f';
+  case KEY_G:
+    return shift ? 'G' : 'g';
+  case KEY_H:
+    return shift ? 'H' : 'h';
+  case KEY_I:
+    return shift ? 'I' : 'i';
+  case KEY_J:
+    return shift ? 'J' : 'j';
+  case KEY_K:
+    return shift ? 'K' : 'k';
+  case KEY_L:
+    return shift ? 'L' : 'l';
+  case KEY_M:
+    return shift ? 'M' : 'm';
+  case KEY_N:
+    return shift ? 'N' : 'n';
+  case KEY_O:
+    return shift ? 'O' : 'o';
+  case KEY_P:
+    return shift ? 'P' : 'p';
+  case KEY_Q:
+    return shift ? 'Q' : 'q';
+  case KEY_R:
+    return shift ? 'R' : 'r';
+  case KEY_S:
+    return shift ? 'S' : 's';
+  case KEY_T:
+    return shift ? 'T' : 't';
+  case KEY_U:
+    return shift ? 'U' : 'u';
+  case KEY_V:
+    return shift ? 'V' : 'v';
+  case KEY_W:
+    return shift ? 'W' : 'w';
+  case KEY_X:
+    return shift ? 'X' : 'x';
+  case KEY_Y:
+    return shift ? 'Y' : 'y';
+  case KEY_Z:
+    return shift ? 'Z' : 'z';
 
-typedef struct
-{
-    unsigned char e_ident[EI_NIDENT];
-    Elf64_Half e_type;
-    Elf64_Half e_machine;
-    Elf64_Word e_version;
-    Elf64_Addr e_entry;
-    Elf64_Off e_phoff;
-    Elf64_Off e_shoff;
-    Elf64_Word e_flags;
-    Elf64_Half e_ehsize;
-    Elf64_Half e_phentsize;
-    Elf64_Half e_phnum;
-    Elf64_Half e_shentsize;
-    Elf64_Half e_shnum;
-    Elf64_Half e_shstrndx;
-} Elf64_Ehdr;
+  case KEY_SPACE:
+    return ' ';
+  case KEY_MINUS:
+    return shift ? '_' : '-';
+  case KEY_EQUALS:
+    return shift ? '+' : '=';
+  case KEY_OPEN_BRACKET:
+    return shift ? '{' : '[';
+  case KEY_CLOSED_BRACKET:
+    return shift ? '}' : ']';
+  case KEY_SEMICOLON:
+    return shift ? ':' : ';';
+  case KEY_SINGLE_QUOTE:
+    return shift ? '"' : '\'';
+  case KEY_BACK_TICK:
+    return shift ? '~' : '`';
+  case KEY_BACKSLASH:
+    return shift ? '|' : '\\';
+  case KEY_COMMA:
+    return shift ? '<' : ',';
+  case KEY_PERIOD:
+    return shift ? '>' : '.';
+  case KEY_SLASH:
+    return shift ? '?' : '/';
 
-typedef struct 
-{
-    Elf64_Word p_type;
-    Elf64_Word p_flags;
-    Elf64_Off p_offset;
-    Elf64_Addr p_vaddr;
-    Elf64_Addr p_paddr;
-    Elf64_Xword p_filesz;
-    Elf64_Xword p_memsz;
-    Elf64_Xword p_align;
-} Elf64_Phdr;
+  case KEY_KEYPAD_0:
+    return '0';
+  case KEY_KEYPAD_1:
+    return '1';
+  case KEY_KEYPAD_2:
+    return '2';
+  case KEY_KEYPAD_3:
+    return '3';
+  case KEY_KEYPAD_4:
+    return '4';
+  case KEY_KEYPAD_5:
+    return '5';
+  case KEY_KEYPAD_6:
+    return '6';
+  case KEY_KEYPAD_7:
+    return '7';
+  case KEY_KEYPAD_8:
+    return '8';
+  case KEY_KEYPAD_9:
+    return '9';
+  case KEY_KEYPAD_PLUS:
+    return '+';
+  case KEY_KEYPAD_MINUS:
+    return '-';
+  case KEY_KEYPAD_ASTERISK:
+    return '*';
+  case KEY_KEYPAD_SLASH:
+    return '/';
+  case KEY_KEYPAD_PERIOD:
+    return '.';
 
-void user_test_entry()
-{
-    syscall_set_number(5);
-    __asm__("int $0x80");
-    while (1);
+  default:
+    return ' ';
+  }
 }
 
-static void play_sound(uint32_t nFrequence) {
- 	uint32_t Div;
- 	uint8_t tmp;
- 
- 	Div = 1193180 / nFrequence;
- 	outb(0x43, 0xb6);
- 	outb(0x42, (uint8_t) (Div) );
- 	outb(0x42, (uint8_t) (Div >> 8));
- 
- 	tmp = inb(0x61);
-  	if (tmp != (tmp | 3)) {
- 		outb(0x61, tmp | 3);
- 	}
- }
- 
- static void nosound() {
- 	uint8_t tmp = inb(0x61) & 0xFC;
-     
- 	outb(0x61, tmp);
- }
- 
- void beep() {
- 	 play_sound(1000);
- 	 pit_sleep_ms(10);
- 	 nosound();
- }
+
+void ps2_kbd_dev_task_entry(void)
+{
+    while (1)
+    {
+    dev_t *dev = dev_find("ps2-kbd");
+    kbd_ev_t ev;
+    if (dev_read(dev, &ev, sizeof(ev)) > 0)
+    {
+        if (ev.action == KEY_ACTION_PRESS)
+        {
+            if (ev.keycode == KEY_BACKSPACE)
+            {
+                fbtty_backspace(&fbtty);
+            } else {
+                char c = key_to_char(ev.keycode, false);
+                fbtty_write_char(&fbtty, c);
+            }
+        }
+    }
+    }
+}   
+
+int x = 50;
+int y = 50;
+
+void ps2_mse_dev_task_entry(void)
+{
+    while (1)
+    {
+    dev_t *dev = dev_find("ps2-mse");
+    mse_ev_t ev;
+    if (dev_read(dev, &ev, sizeof(ev)) > 0)
+    {   
+        gfx_draw_rect(fbtty.surface, x, y, 10, 10, 0x0);
+        gfx_surface_sync_chunk(fbtty.surface, x, y, 10, 10);
+    
+        x += ev.dx;
+        y -= ev.dy;
+
+        gfx_draw_rect(fbtty.surface, x, y, 10, 10, 0xFFFF00);
+        gfx_surface_sync_chunk(fbtty.surface, x, y, 10, 10);
+    }
+    }
+}   
+
+void init_task_entry(void)
+{
+    task_t *ps2_kbd_dev = kernel_task_create(ps2_kbd_dev_task_entry);
+    sched_schedule(ps2_kbd_dev);
+    task_t *ps2_mse_dev = kernel_task_create(ps2_mse_dev_task_entry);
+    sched_schedule(ps2_mse_dev);
+}
+
+#include <libds/include/hashmap.h>
 
 void kmain(bootloader_ctx_t *ctx)
 {
@@ -141,7 +261,7 @@ void kmain(bootloader_ctx_t *ctx)
     serial_init();
     gdt_init();
     idt_init();
-    tss_init();    
+    tss_init(); 
     pmm_init();
 
     krnlctx(pt) = pt_create();    
@@ -150,7 +270,6 @@ void kmain(bootloader_ctx_t *ctx)
     pt_swap(krnlctx(pt));
 
     acpi_init();
-
     pic_init();
     apic_init();
 
@@ -161,73 +280,28 @@ void kmain(bootloader_ctx_t *ctx)
 
     ps2_init();
     ps2_keyboard_init();
-    
     ps2_mouse_init();
 
     vfs_init();
     fs_mount(&tmpfs, &vfs_root);
 
-    path_t initrd = vfs_path_from_abs("/initrd");
-    inode_t *initrd_inode = NULL;
-
-    vfs_create(&initrd, INODE_DIR, &initrd_inode);
-    if (!initrd_inode) 
-        debug("No initrd");
+    initrd_init();
     
-    const module_t *module = module_find(&bootctx(modules), "/boot/initrd.tar");
+    inode_t *welcome = NULL;
+    initrd_get("welcome.txt", &welcome);
+    char *buf[256] = {0};
 
-    tar_extract(module->addr);
-    path_t hello = vfs_path_from_abs("/initrd/welcome.txt");
-    inode_t *hello_inode = NULL;
-    vfs_lookup(&hello, &hello_inode);
+    inode_read(welcome, buf, 30, 0);
+    debug("%s", buf);
 
-    path_t elf_file_path = vfs_path_from_abs("/initrd/main");
-    inode_t *elf_file = NULL;
-    if (vfs_lookup(&elf_file_path, &elf_file) >= 0)
-    {
-        debug("Found the elf file successfully!");
-    }
+    fb_t fb;
+    bootctx(fbs).get_fb(&bootctx(fbs), &fb, 0);
 
-    paddr_t phys = pmm_alloc(1);
+    fbtty_init(&fbtty, &fb);
 
-    pt_map(
-        krnlctx(pt),
-
-     phys,
-     0x400000,   
-     PAGE_FLAG_PRESENT |
-            PAGE_FLAG_READ_WRITE |
-            PAGE_FLAG_USER_SUPERVISOR
-    );
-
-    uint8_t *code = paddr_ptr(phys);
-    code[0] = 0x48; 
-    code[1] = 0xC7; 
-    code[2] = 0xC0; 
-    code[3] = 0x01; 
-    code[4] = 0x00; 
-    code[5] = 0x00; 
-    code[6] = 0x00;
-    code[7] = 0xCD;
-    code[8] = 0x80;
-    code[9] = 0xEB;
-    code[10] = 0xFE;
-
-    paddr_t stack = pmm_alloc(1);
- 
-    pt_map(
-        krnlctx(pt),
-        
-     stack,
-     0x510000, 
-     PAGE_FLAG_PRESENT |
-            PAGE_FLAG_READ_WRITE |
-            PAGE_FLAG_USER_SUPERVISOR
-    );   
-
-    tss.rsp0 = read_sp();
-    extern void userspace_jump();
-    userspace_jump();
+    task_t *init_task = kernel_task_create(init_task_entry);
+    sched_schedule(init_task);
+    sched_init();
 
     hcf();
 }

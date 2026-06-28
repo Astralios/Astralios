@@ -176,10 +176,14 @@ void apic_init(void)
     msr_set(APIC_BASE_MSR, apic_msr);    
 
     lapic = (uint32_t*)to_vaddr(lapic_addr);
+    debug("lapic: %x", lapic_addr);
+
     pt_map(krnlctx(pt), lapic_addr, (vaddr_t)lapic, PAGE_FLAG_READ_WRITE | PAGE_FLAG_PRESENT);
 
     ioapic = (uint32_t*)to_vaddr(ioapic_addr);
     pt_map(krnlctx(pt), ioapic_addr, (vaddr_t)ioapic, PAGE_FLAG_READ_WRITE | PAGE_FLAG_PRESENT);
+
+    debug("ioapic: %x", ioapic);
 
     apic_timer_init();
     pic_disable();

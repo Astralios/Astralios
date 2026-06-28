@@ -27,10 +27,11 @@ typedef struct memmap_entry_t
     uint64_t type;
 } memmap_entry_t;
 
+typedef struct memmap_t memmap_t;
 typedef struct memmap_t
 {
-    memmap_entry_t* entries;
-    size_t          num_entries;
+    void   (*get_entry)(memmap_t *memmap, memmap_entry_t *entry, size_t idx);
+    size_t num_entries;
 } memmap_t;
 
 typedef struct krnl_map_t
@@ -52,6 +53,6 @@ typedef struct bootloader_ctx_t
     krnl_map_t  krnl_map;
     acpi_rsdp_t acpi_rsdp;
     memmap_t    memmap;
-    fb_t*       fbs;
+    fbs_t       fbs;
 } bootloader_ctx_t;
 

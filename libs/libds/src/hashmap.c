@@ -1,55 +1,143 @@
 #include "hashmap.h"
 
-void hashmap_init(
-        hashmap_t *map, 
-        size_t cap, 
-        size_t ksize, 
-        size_t vsize, 
-        alloc_fn_t alloc_fn, 
-        free_fn_t free_fn, 
-        hash_fn_t hash_fn
-)
-{
-    if (!map) return;
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
 
-    map->len = 0;
-    map->cap = cap;
-    map->alloc_fn = alloc_fn;
-    map->free_fn = free_fn;
-    map->hash_fn = hash_fn;
-    map->ksize = ksize;
-    map->vsize = vsize;
-    map->entries = (hashmap_entry_t**)map->alloc_fn(map->cap * sizeof(hashmap_entry_t*));
+#define MALLOC kmalloc
+#define FREE   kfree
 
-    return;
+#define TOMBSTONE       (void*)(-1)
+#define DEFAULT_HM_CAP  16
+
+static uint64_t fnv_hash(char *s, int len) {
+    uint64_t hash = 0xcbf29ce484222325;
+    for (int i = 0; i < len; i++) {
+        hash *= 0x100000001b3;
+        hash ^= (unsigned char)s[i];
+    }
+    return hash;
 }
 
-hashmap_entry_t* hashmap_entry_create(hashmap_t *map)
+static inline bool hashmap_should_resize(hashmap_t *hm)
 {
-    hashmap_entry_t *entry = map->alloc_fn(sizeof(hashmap_entry_t));
-    *entry = (hashmap_entry_t){0};
-
-    return entry;
+    int pr = 100 * hm->len / hm->cap;
+    return pr >= 75;
 }
 
-void hashmap_set(hashmap_t *map, void *key, void *val, hashmap_set_mode_t mode)
+static bool hashmap_resize(hashmap_t *hm)
 {
-    size_t hash = map->hash_fn(key);
-    size_t idx = hash % map->cap;
-    (void)idx;
+    hashmap_entry_t *new_entries = MALLOC(2 * hm->cap * sizeof(hashmap_entry_t));
+    if (!new_entries)
+        return false;
 
-    switch (mode) {
-    case TAKE: {
-        hashmap_entry_t *entry = hashmap_entry_create(map);
-        entry->hash = hash;
-        entry->key = key;
-        entry->val = val;
+    hashmap_entry_t *old_entries = hm->entries;
+    size_t old_cap = hm->cap;
+    hm->entries = new_entries;
+    hm->cap *= 2;
+    for (size_t i = 0; i < hm->cap; ++i)
+    {
+        hm->entries[i].keysz = 0;
+        hm->entries[i].key = TOMBSTONE;
+        hm->entries[i].val = NULL;
+    }
+ 
+    for (size_t i = 0; i < old_cap; ++i)
+    {
+        if (old_entries[i].key != TOMBSTONE)
+        {
+            uint64_t hash = fnv_hash((char*)old_entries[i].key, old_entries[i].keysz);
+            size_t idx = hash % hm->cap;
+            
+            hm->entries[idx].keysz = old_entries[i].keysz;
+            hm->entries[idx].key = old_entries[i].key;
+            hm->entries[idx].val = old_entries[i].val;
+        }
+    }
+    
+    FREE(old_entries);
+    return true;
+}
+
+void hashmap_init(hashmap_t *hm)
+{   
+    hm->cap = DEFAULT_HM_CAP;
+    hm->len = 0;
+    hm->entries = MALLOC(hm->cap * sizeof(hashmap_entry_t));
+    for (size_t i = 0; i < hm->cap; ++i)
+    {
+        hm->entries[i].keysz = 0;
+        hm->entries[i].key = TOMBSTONE;
+        hm->entries[i].val = NULL;
+    }
+} 
+
+bool hashmap_put(hashmap_t *hm, void *key, size_t keysz, void *val)
+{
+    if (hashmap_should_resize(hm))
+        if (!hashmap_resize(hm))
+            return false;
+
+    uint64_t hash = fnv_hash((char*)key, keysz);
+    size_t idx = hash % hm->cap;
+    printfln("Put: %ld", idx);
+
+    for (size_t i = 0; i < hm->cap; ++i)
+    {   
+        hashmap_entry_t *entry = &hm->entries[(idx + i) % hm->cap];
         
-         
+        if (entry->key == TOMBSTONE)
+        {
+            entry->keysz = keysz;
+            entry->key = key;
+            entry->val = val;
+            hm->len++;
+            return true;
+        }
+    }
+    return false;
+}
 
-        break;
+bool hashmap_get(hashmap_t *hm, void *key, size_t keysz, void **val)
+{
+    uint64_t hash = fnv_hash((char*)key, keysz);
+    size_t idx = hash % hm->cap;
+    printfln("Get: %ld", idx);
+    for (size_t i = 0; i < hm->cap; ++i)
+    {   
+        hashmap_entry_t *entry = &hm->entries[(idx + i) % hm->cap];
+        
+        if (entry->key != TOMBSTONE && entry->keysz == keysz && memcmp(entry->key, key, keysz) == 0)
+        {   
+            *val = entry->val;
+            return true;
+        }
     }
-    default:
-        break;
+
+    printfln("!");
+
+    return false;   
+}
+
+bool hashmap_remove(hashmap_t *hm, void *key, size_t keysz)
+{   
+    if (hm->len == 0)
+        return false;
+
+    uint64_t hash = fnv_hash((char*)key, keysz);
+    size_t idx = hash % hm->cap;
+
+    for (size_t i = 0; i < hm->cap; ++i)
+    {   
+        hashmap_entry_t *entry = &hm->entries[(idx + i) % hm->cap];
+        if (entry->key != TOMBSTONE && entry->keysz == keysz && memcmp(entry->key, key, keysz) == 0)
+        {   
+            entry->key = TOMBSTONE;
+            entry->val = NULL;
+            hm->len--;
+            return true;
+        }
     }
+
+    return false;   
 }

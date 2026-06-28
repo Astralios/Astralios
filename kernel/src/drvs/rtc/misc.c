@@ -1,5 +1,4 @@
 #include "misc/debug.h"
-#include "misc/printk.h"
 #include <drvs/rtc/misc.h>
 
 void _printk_rtc_time(const char *prefix, rtc_time_t *now)

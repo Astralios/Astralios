@@ -6,23 +6,13 @@
 #include "modules.h"
 #include "string.h"
 
+static bootloader_ctx_t bootloader_ctx;
+static void load_bootloader_ctx(void);
+extern void kmain(bootloader_ctx_t *ctx);
+
+#ifdef __protocol_limine__
 #define LIMINE_API_REVISION 4
 #include "limine.h"
-
-#define MAX_HEAP_SIZE 1024 * 16
-
-static bootloader_ctx_t bootloader_ctx;
-
-static char heap[MAX_HEAP_SIZE];
-static uint32_t heap_head = 0;
-
-void* heap_alloc(size_t size) 
-{
-    size = (size + 0xF) & ~0xF;
-    if (!size || size > MAX_HEAP_SIZE - heap_head) return NULL;    
-    heap_head += size;
-    return (void*)(heap + heap_head - size);
-}
 
 __attribute__((used, section(".limine_requests")))
 static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(4);
@@ -91,45 +81,48 @@ static void get_krnl_map(krnl_map_t *krnl_map)
     }
 }
 
+static void get_memmap_entry(memmap_t *memmap, memmap_entry_t *entry, size_t i)
+{
+    if (i >= memmap->num_entries)
+        return;
+
+    entry->base = memmap_request.response->entries[i]->base;
+    entry->length = memmap_request.response->entries[i]->length;
+    entry->type = from_limine_type(memmap_request.response->entries[i]->type);
+}
+
 static void get_memmap(memmap_t *memmap)
 {
     if (memmap_request.response)
     {
         memmap->num_entries = memmap_request.response->entry_count;
-        memmap->entries = (memmap_entry_t*)heap_alloc(memmap->num_entries * sizeof(memmap_entry_t));
-        for (uint64_t i = 0; i < memmap->num_entries; i++)
-        {
-            memmap->entries[i].base = memmap_request.response->entries[i]->base;
-            memmap->entries[i].length = memmap_request.response->entries[i]->length;
-            memmap->entries[i].type = from_limine_type(memmap_request.response->entries[i]->type);
-        }
+        memmap->get_entry = get_memmap_entry;
     }
 }
 
-static void get_fbs(fb_t **buf)
+void get_fb(fbs_t *fbs, fb_t *fb, size_t i)
 {
-    struct limine_framebuffer_response *res =framebuffer_request.response;
-    if (res)
-    {
-        *buf = (fb_t*)heap_alloc(res->framebuffer_count * sizeof(fb_t));
-        fb_t *fbs = *buf;
-        for (size_t i = 0; i < res->framebuffer_count; i++)
-        {
-            struct limine_framebuffer *fb = res->framebuffers[i];
-            fbs[i].addr = (uint64_t)fb->address;
-            fbs[i].width = fb->width;
-            fbs[i].height = fb->height;
-            fbs[i].bpp = fb->bpp;
-            fbs[i].pitch = fb->pitch;
-            fbs[i].memory_model = fb->memory_model;
-            fbs[i].blue_mask_shift = fb->blue_mask_shift;
-            fbs[i].red_mask_shift = fb->red_mask_shift;
-            fbs[i].green_mask_shift = fb->green_mask_shift;
-            fbs[i].red_mask_size = fb->red_mask_size;
-            fbs[i].blue_mask_size = fb->blue_mask_size;
-            fbs[i].green_mask_size = fb->green_mask_size;
-        }
-    }
+    if (i >= fbs->num_fbs)
+        return;
+    struct limine_framebuffer *lfb = framebuffer_request.response->framebuffers[i];
+    fb->addr = (uint64_t)lfb->address;
+    fb->width = lfb->width;
+    fb->height = lfb->height;
+    fb->bpp = lfb->bpp;
+    fb->pitch = lfb->pitch;
+    fb->memory_model = lfb->memory_model;
+    fb->blue_mask_shift = lfb->blue_mask_shift;
+    fb->red_mask_shift = lfb->red_mask_shift;
+    fb->green_mask_shift = lfb->green_mask_shift;
+    fb->red_mask_size = lfb->red_mask_size;
+    fb->blue_mask_size = lfb->blue_mask_size;
+    fb->green_mask_size = lfb->green_mask_size;
+}
+
+static void get_fbs(fbs_t *fbs)
+{
+    fbs->num_fbs = framebuffer_request.response->framebuffer_count;
+    fbs->get_fb = get_fb;
 }
 
 static inline uint64_t get_modules_count(void)
@@ -138,24 +131,25 @@ static inline uint64_t get_modules_count(void)
     return 0;
 }
 
+static void get_module(modules_t *mods, module_t *mod, size_t i)
+{
+    if (i >= mods->num_modules)
+        return;
+    
+    struct limine_file *file = module_request.response->modules[i];
+    mod->addr = file->address;
+    mod->path = file->path;
+    mod->size = file->size;
+}
+
 static void get_modules(modules_t *modules)
 {
+    modules->get_module = get_module;
     uint64_t modules_count = get_modules_count();
     if (modules_count == 0) 
         return;
     
     modules->num_modules = modules_count;
-    modules->modules = (module_t*)heap_alloc(sizeof(module_t) * modules_count);
-
-    for (size_t i = 0; i < modules_count; i++)
-    {
-        struct limine_file *file = module_request.response->modules[i];
-        modules->modules[i] = (module_t) {
-            .addr = file->address,
-            .path = file->path,
-            .size = file->size,
-        };
-    }
 }
 
 static void get_rsdp(acpi_rsdp_t *rsdp)
@@ -179,10 +173,19 @@ static void load_bootloader_ctx(void)
     bootloader_ctx.hhdm = hhdm_request.response->offset;
 }
 
-extern void kmain(bootloader_ctx_t *ctx);
 void kstart(void) 
 {
     load_bootloader_ctx();
     kmain(&bootloader_ctx);
 }
+#elif __protocol_multiboot1__
+void kstart()
+{
 
+}
+
+void load_bootloader_ctx(void)
+{
+
+}
+#endif

@@ -1,6 +1,6 @@
 include make.conf
 
-.PHONY: directories initrd all
+.PHONY: directories initrd all clean
 
 all: directories initrd
 
@@ -30,5 +30,8 @@ include build.mk
 
 all: iso
 
+clean:
+	rm -rf $(BUILD_DIR)
+
 iso: 
-	make -C target/$(ARCH)/$(BOOTLDR)
+	make -C target/$(ARCH)/$(BOOTLDR)/

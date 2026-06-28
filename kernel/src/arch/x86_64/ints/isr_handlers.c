@@ -136,7 +136,7 @@ void isr_interrupt_handler(interrupt_frame_t *iframe)
     {
         krnlctx(interrupt_controller)->send_eoi(iframe->vector_number);
         timer_callback();
-        sched_switch();
+        sched_switch();       
         break;
     }
     case KBD_INT:

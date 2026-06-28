@@ -1,6 +1,6 @@
 include ../../../make.conf
 
-CPPFLAGS  		:= -I./limine/ -I$(ROOT_DIR)/boot/ -MMD -MP
+CPPFLAGS  		:= -I./limine/ -I$(ROOT_DIR)/boot/ -D __protocol_$(PROTOCOL)__ -MMD -MP
 MODULE_NAME := limine
 
 ALL_OBJS := $(shell find $(OBJS_DIR) -name '*.o')
@@ -21,7 +21,7 @@ download_binaries:
 $(KERNEL): $(ALL_OBJS)
 	@cc $(CFLAGS) $(LDFLAGS) $(ALL_OBJS) -o $(KERNEL)
 
-$(ISO): $(KERNEL)
+$(ISO): $(KERNEL) limine.conf
 	@mkdir -p $(ISO_ROOT_DIR)/boot/limine $(ISO_ROOT_DIR)/EFI/BOOT
 	@mv $(KERNEL) $(ISO_ROOT_DIR)/boot/$(KERNEL)
 	@cp -v ./limine.conf $(ISO_ROOT_DIR)/boot/limine/
@@ -42,5 +42,4 @@ $(ISO): $(KERNEL)
 	         $(ISO_ROOT_DIR) -o $(ISO)
 	@./limine/limine bios-install $(ISO)
 
-	
 include $(BUILD_MK)

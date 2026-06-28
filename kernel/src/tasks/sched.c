@@ -1,5 +1,6 @@
 #include "kernel.h"
 #include "mm/pmm/pmm.h"
+#include <string.h>
 #ifdef __ARCH_X86_64__
 #include <arch/x86_64/cpu/cpu.h>
 #include <arch/x86_64/desc/gdt.h>
@@ -83,7 +84,6 @@ void sched_switch(void)
     task_t *new_task = sched_select_task();
     if (curr_task != new_task)
     {
-        debug("Switching to: %x", curr_task->pid);
         switch_to(curr_task, new_task);
     }
 }
@@ -170,12 +170,15 @@ task_t *kernel_task_create(void (*entry)())
 
     return task;
 }
+
 extern void user_task_prelude(void);
 
-task_t *user_task_create(uint64_t addr)
+task_t *user_task_create(uint64_t addr, size_t size)
 {
     task_t *task = task_alloc();
+    
     stack_allocate(&task->kernel_stack);
+    
     vaddr_t stack_start = 0x00007FFFFFFFFFFF;
     task->user_stack.base = (void*)stack_start;
     task->user_stack.size = TASK_STACK_NUM_PAGES;
@@ -187,7 +190,7 @@ task_t *user_task_create(uint64_t addr)
     *(--krsp) = (uint64_t)task->user_stack.sp;
     *(--krsp) = 0x202;
     *(--krsp) = offsetof(gdt_t, user_code_segment) | 0x3;
-    *(--krsp) = addr;
+    *(--krsp) = 0x400000;
     *(--krsp) = (uint64_t)user_task_prelude;
     krsp -= 6;
 
@@ -208,9 +211,19 @@ task_t *user_task_create(uint64_t addr)
                 );
     }
 
+    paddr_t p = pmm_alloc(1);
+    pt_map(
+                task->pt, 
+                p, 
+                0x400000, 
+                PAGE_FLAG_PRESENT 
+                | PAGE_FLAG_READ_WRITE | PAGE_FLAG_USER_SUPERVISOR
+        );
+
+    memcpy((void*)to_vaddr(p), (void*)addr, size);
     task->pid = next_pid++;
     list_init(&task->list);
-
+    
     return task;
 }
 
@@ -246,4 +259,3 @@ void sched_init(void)
     curr_task = &dummy_task;
     sti();
 }
-

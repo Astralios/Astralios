@@ -74,8 +74,9 @@ void acpi_init(void)
     xsdp = acpi_get_rsdp();
     
     fadt_t *fadt_header = acpi_find_sdt("FACP");
-    if (fadt_header)
+    if (!fadt_header)
     {
+        // NO FADT found
         return;
     }
 
@@ -109,6 +110,8 @@ void acpi_init(void)
 
             curr += entry->record_len;
         }
+    } else {
+        debug("MADT has not been found!");
     }
 
     info(acpi_init, "Initalized!");

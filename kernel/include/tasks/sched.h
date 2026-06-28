@@ -26,7 +26,7 @@ void sched_schedule(task_t *task);
 void sched_unschedule(task_t *task);
 
 task_t* kernel_task_create(void (*entry)());
-task_t* user_task_create(uint64_t addr);
+task_t* user_task_create(uint64_t addr, size_t size);
 
 void    task_sleep(void);
 void    task_wake_all_up(void);

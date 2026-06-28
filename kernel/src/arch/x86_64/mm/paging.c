@@ -83,7 +83,8 @@ void pt_map_memmap(page_table_t *pt)
 {
     for (size_t i = 0; i < krnl_ctx.bootloader_ctx->memmap.num_entries; i++)
     {
-        memmap_entry_t entry = krnl_ctx.bootloader_ctx->memmap.entries[i];
+        memmap_entry_t entry;
+        bootctx(memmap).get_entry(&bootctx(memmap), &entry, i);
         switch (entry.type) {
             case MEMMAP_FRAMEBUFFER:
             case MEMMAP_USABLE:

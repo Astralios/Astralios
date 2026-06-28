@@ -1,34 +1,21 @@
 #pragma once
-
-#include <string.h>
 #include <stddef.h>
-
-typedef void*   (*alloc_fn_t)(size_t size);
-typedef void    (*free_fn_t)(void *ptr);
-typedef size_t  (*hash_fn_t)(void *val);
-
-typedef struct hashmap_entry_t hashmap_entry_t;
-typedef struct hashmap_entry_t
+#include <stdbool.h>
+typedef struct
 {
-    size_t hash;
-    void *key, *val;
-    hashmap_entry_t *next;
+    void *key;
+    void *val; 
+    size_t keysz;
 } hashmap_entry_t;
 
-typedef enum hashmap_set_mode_t
+typedef struct
 {
-    TAKE,
-    COPY,
-} hashmap_set_mode_t;
-
-typedef struct hashmap_t
-{
-    size_t              len, cap;
-    size_t              ksize, vsize;
-    hashmap_entry_t**   entries;
-    alloc_fn_t          alloc_fn;
-    free_fn_t           free_fn;
-    hash_fn_t           hash_fn;
+    hashmap_entry_t *entries;
+    size_t cap, len;
 } hashmap_t;
 
-
+void hashmap_init(hashmap_t *hm);
+bool hashmap_put(hashmap_t *hm, void *key, size_t keysz, void *val);
+bool hashmap_get(hashmap_t *hm, void *key, size_t keysz, void **val);
+bool hashmap_remove(hashmap_t *hm, void *key, size_t keysz);
+// TOOD: Add hashmap free

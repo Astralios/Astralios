@@ -10,21 +10,26 @@ typedef struct
     char*    path;
 } module_t;
 
-typedef struct
+typedef struct modules_t modules_t;
+typedef struct modules_t
 {
+    void (*get_module)(modules_t *mods, module_t *mod, size_t i);
     uint64_t  num_modules;
-    module_t* modules;
 } modules_t;
 
 // TODO:  Maybe you don't even need modules
-static inline const module_t *module_find(const modules_t *modules, const char *name)
+static inline void module_find(modules_t *modules, module_t *module, const char *name)
 {
     for (size_t i = 0; i < modules->num_modules; ++i)
     {
-        module_t *mod = &modules->modules[i];
-        if (strcmp(mod->path, name) == 0) return mod;
+        module_t mod;
+        modules->get_module(modules, &mod, i);
+        if (strcmp(mod.path, name) == 0)
+        {
+            *module = mod;
+            return;
+        }
     }
-    return NULL;
 }
 
 

@@ -5,7 +5,6 @@
 #include <mm/pmm/pmm.h>
 #include <misc/helpers.h>
 #include <misc/debug.h>
-#include <misc/todo.h>
 
 static pmm_area_t *area_list  = NULL;
 
@@ -16,7 +15,8 @@ void pmm_init(void)
     memmap_t memmap = bootctx(memmap);
     for (size_t i = 0; i < memmap.num_entries; ++i)
     {
-        memmap_entry_t entry = memmap.entries[i];
+        memmap_entry_t entry;
+        memmap.get_entry(&memmap, &entry, i);
 
         if (entry.type == MEMMAP_USABLE)
         {
@@ -42,7 +42,6 @@ void pmm_init(void)
 
                 area_list = area;
             } else {
-                // todo(pmm_init, "Unhandled branch!");
             }
         }
     }

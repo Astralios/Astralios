@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-
+#include <stddef.h>
 typedef struct fb_t
 {
     uint64_t addr;
@@ -17,6 +17,12 @@ typedef struct fb_t
     uint8_t blue_mask_size;
     uint8_t blue_mask_shift;
 } fb_t;
+
+typedef struct fbs_t fbs_t;
+typedef struct fbs_t {
+    void (*get_fb)(fbs_t *fbs, fb_t *fb, size_t i);
+    size_t num_fbs;
+} fbs_t;
 
 static inline uint32_t fb_colourFromRGB(fb_t *fb, uint8_t r, uint8_t g, uint8_t b)
 {
